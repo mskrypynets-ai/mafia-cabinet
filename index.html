@@ -99,21 +99,35 @@
 <div id="modal" class="modal">
     <div class="modal-content" id="modal-content"></div>
 </div>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-    let userBalance = 1849; 
-    const dbUsers = { "605880927": "𝐌𝐚𝐤𝐬𝐲𝐦" }; 
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Розгортаємо на весь екран
 
+    // --- ОТРИМАННЯ ДАНИХ ІЗ ПОСИЛАННЯ (URL) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    // Беремо баланс (bal) та ID користувача (id)
+    const initialBalance = parseFloat(urlParams.get('bal')) || 0;
+    const userId = urlParams.get('id');
+
+    let userBalance = initialBalance;
+
+    // Оновлюємо інтерфейс даними
+    document.getElementById('balance-val').innerText = userBalance + " ₲";
+    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || "Maksym";
+
+    // --- ЗВУКИ ---
     function playClick() {
         const sound = document.getElementById('clickSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
     }
 
-    // НОВА ФУНКЦІЯ ДЛЯ УСПІШНОЇ КУПІВЛІ
     function playSuccess() {
         const sound = document.getElementById('successSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
     }
 
+    // --- ЛОГІКА ВІКНО ---
     function showView(id) {
         playClick();
         document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
@@ -131,7 +145,8 @@
         document.getElementById('modal').style.display = 'none'; 
     }
 
-    function checkBalanceAndConfirm(price, confirmText) {
+    // --- КУПІВЛЯ ---
+    function checkBalanceAndConfirm(price, confirmText, serviceName) {
         if (userBalance < price) {
             openModal(`
                 <h3 style="color:#ff4444">❌ ВІДМОВА</h3>
@@ -142,102 +157,49 @@
         }
         openModal(`
             <p>${confirmText}</p>
-            <button class="btn btn-confirm" onclick="executePurchase(${price})">ПІДТВЕРДИТИ</button>
+            <button class="btn btn-confirm" onclick="executePurchase(${price}, '${serviceName}')">ПІДТВЕРДИТИ</button>
             <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
         `);
     }
 
-    function executePurchase(price) {
-        playSuccess(); // ВІДТВОРЮЄМО ЗВУК КАСИ ПРИ КУПІВЛІ
+    function executePurchase(price, serviceName) {
+        playSuccess();
+        // ВІДПРАВКА ДАНИХ У БОТ
+        // Формат "НазваПослуги:Ціна"
+        tg.sendData(`${serviceName}:${price}`); 
+        
+        // Візуальне оновлення
         userBalance -= price;
         document.getElementById('balance-val').innerText = userBalance + " ₲";
-        openModal(`<h3>Успішно!</h3><p>Очікуйте сповіщення від сім'ї</p><button class="btn" onclick="closeModal()">ОК</button>`);
+        
+        openModal(`<h3>Успішно!</h3><p>Заявку надіслано адмінам.</p>`);
+        
+        // Закриваємо WebApp через 2 секунди, щоб юзер побачив успіх
+        setTimeout(() => {
+            tg.close();
+        }, 2000);
     }
 
-    // --- ЛОГІКА КУПІВЛІ ДІНЕРО ---
-    function startBuyDine() {
-        openModal(`<p>Ви бажаєте купити дінеро?<br>(курс 1 грн - 1 дінеро)<br><br>Мінімально 10 дінеро</p><button class="btn btn-confirm" onclick="buy2()">ТАК</button><button class="btn" onclick="closeModal()">НІ</button>`);
-    }
-    function buy2() {
-        openModal(`<p>Введіть кількість дінеро (мінімум 10):</p><input type="number" id="b-amt" min="10"><button class="btn btn-confirm" onclick="buy3()">ДАЛІ</button>`);
-    }
-    function buy3() {
-        const a = document.getElementById('b-amt').value;
-        if (a < 10) { alert("Мінімум 10!"); return; }
-        openModal(`
-            <p>Перейдіть за <a href="https://send.monobank.ua/jar/3riFR9JCYm" target="_blank" style="color:var(--gold); font-weight:bold;">посиланням MONOBANK</a></p>
-            <p>Внесіть ${a} грн і надішліть скріншот у бот.</p>
-            <button class="btn btn-confirm" onclick="redirectToBot()">ПЕРЕЙТИ ДО БОТА</button>
-        `);
-    }
-    function redirectToBot() {
-        window.location.href = 'tg://resolve?domain=DineGuerBot&start=buy';
-        closeModal();
-    }
-
-    // --- ІНШІ ФУНКЦІЇ ---
+    // --- ФУНКЦІЇ ДЛЯ МЕНЮ (АДАПТОВАНІ) ---
     function startPrefixSelf() {
-        openModal(`<p>На скільки діб ви хочете придбати?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
+        openModal(`<p>Кількість діб:</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
     }
     function ps2() {
         const d = document.getElementById('ps-days').value;
-        openModal(`<p>Вкажіть текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d*15})">ДАЛІ</button>`);
+        openModal(`<p>Текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d*15})">ДАЛІ</button>`);
     }
     function psF(total) {
         const text = document.getElementById('ps-text').value;
-        checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}' за ${total} дінеро?`);
+        checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}'?`, `Префікс: ${text}`);
     }
 
-    function startPrefixFriend() {
-        openModal(`<p>На скільки діб ви хочете придбати?</p><input type="number" id="pf-days" value="1" min="1"><button class="btn btn-confirm" onclick="pf2()">ДАЛІ</button>`);
-    }
-    function pf2() {
-        const d = document.getElementById('pf-days').value;
-        openModal(`<p>Вкажіть текст префікса:</p><input type="text" id="pf-text"><button class="btn btn-confirm" onclick="pf3(${d*20})">ДАЛІ</button>`);
-    }
-    function pf3(total) {
-        openModal(`<p>Вкажіть ID отримувача:</p><input type="number" id="pf-id"><button class="btn btn-confirm" onclick="pfCheck(${total})">ДАЛІ</button>`);
-    }
-    function pfCheck(total) {
-        const id = document.getElementById('pf-id').value;
-        if (dbUsers[id]) {
-            const text = document.getElementById('pf-text').value;
-            checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}' для ${dbUsers[id]}?`);
-        } else { alert("ID не знайдено"); }
+    // --- ПЕРЕКАЗИ (Бот обробить через посилання) ---
+    function startBuyDine() {
+        tg.openTelegramLink('https://t.me/DineroGM_bot?start=buy');
+        tg.close();
     }
 
-    function startAdminStatus() {
-        openModal(`<p>Введіть кількість днів (мін. 3):</p><input type="number" id="adm-d" value="3"><button class="btn btn-confirm" onclick="admF()">ДАЛІ</button>`);
-    }
-    function admF() {
-        const d = document.getElementById('adm-d').value;
-        if (d < 3) { alert("Мінімум 3 дні!"); return; }
-        checkBalanceAndConfirm(d*50, `✒️ Купити адмін-статус на ${d} днів за ${d*50} дінеро?`);
-    }
-
-    function startSellDine() {
-        openModal(`<p>Скільки дінеро продати?</p><input type="number" id="s-amt"><button class="btn btn-confirm" onclick="sell2()">ДАЛІ</button>`);
-    }
-    function sell2() {
-        const a = document.getElementById('s-amt').value;
-        if (userBalance < a) { alert("Недостатньо коштів"); return; }
-        openModal(`<p>Введіть номер картки:</p><input type="text"><button class="btn btn-confirm" onclick="executePurchase(${a})">ПІДТВЕРДИТИ</button>`);
-    }
-
-    function startTransferDine() {
-        openModal(`<p>Сума переказу:</p><input type="number" id="tr-amt"><button class="btn btn-confirm" onclick="tr2()">ДАЛІ</button>`);
-    }
-    function tr2() {
-        const a = document.getElementById('tr-amt').value;
-        openModal(`<p>Введіть ID отримувача:</p><input type="number" id="tr-id"><button class="btn btn-confirm" onclick="trF(${a})">ДАЛІ</button>`);
-    }
-    function trF(a) {
-        const id = document.getElementById('tr-id').value;
-        if (dbUsers[id]) {
-            checkBalanceAndConfirm(a, `Передати ${a} дінеро ${dbUsers[id]}?`);
-        } else { alert("ID не знайдено"); }
-    }
-
+    // --- ГЕНЕРАЦІЯ ЛАВКИ ---
     const items = [
         ["Змінити префікс гравцеві", 20], ["Змінити префікс Адміну", 40], ["Зняти варн", 70],
         ["Зняти бан", 250], ["Дати мут адміністратору (30 хв)", 200], ["Захист від таргета", 30],
@@ -245,14 +207,17 @@
         ["Зняти образливий преф", 550], ["Бан (на 12 годин)", 200], ["Зняти мут (на 30 хв)", 40],
         ["Мут учаснику (30 хв)", 50], ["Мут учаснику (60 хв)", 100], ["Бан адміну (12 годин)", 1000]
     ];
+    
     const shop = document.getElementById('shop-container');
     items.forEach(i => {
         const d = document.createElement('div');
-        d.className = 'menu-item full'; d.style.marginBottom = '10px';
+        d.className = 'menu-item full';
+        d.style.marginBottom = '10px';
         d.innerHTML = `<div>${i[0]} — ${i[1]} ₲</div>`;
-        d.onclick = () => { checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]}?`); };
+        d.onclick = () => { checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]}?`, i[0]); };
         shop.appendChild(d);
     });
 </script>
 </body>
 </html>
+
