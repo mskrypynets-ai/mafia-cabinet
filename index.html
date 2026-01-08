@@ -69,7 +69,7 @@
         <div class="menu-item" onclick="showView('transfer-view')">💸 ПЕРЕКАЗ КОШТІВ</div>
         <div class="menu-item full" onclick="showView('shop-view')">🎩 ЛАВКА БУТЛЕГЕРА</div>
     </div>
-<div id="prefix-view" class="hidden">
+    <div id="prefix-view" class="hidden">
         <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
         <div class="menu-grid" style="margin-top:20px">
             <div class="menu-item" onclick="startPrefixSelf()">ПРЕФІКС ДЛЯ СЕБЕ</div>
@@ -112,7 +112,6 @@
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // Універсальна перевірка балансу
     function checkBalanceAndConfirm(price, confirmText) {
         if (userBalance < price) {
             openModal(`
@@ -125,8 +124,8 @@
         }
         openModal(`
             <p>${confirmText}</p>
-            <button class="btn btn-confirm" onclick="executePurchase(${price})">Підтвердити</button>
-            <button class="btn" onclick="closeModal()">Скасувати</button>
+            <button class="btn btn-confirm" onclick="executePurchase(${price})">ПІДТВЕРДИТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
         `);
     }
 
@@ -136,7 +135,33 @@
         openModal(`<h3>Дякуємо!</h3><p>Очікуйте сповіщення від сім'ї</p><button class="btn" onclick="closeModal()">ОК</button>`);
     }
 
-    // --- ПРЕФІКСИ ---
+    // КУПИТИ ДІНЕРО (ОНОВЛЕНО)
+    function startBuyDine() {
+        openModal(`
+            <p>Ви бажаєте купити дінеро?<br>(курс 1 грн - 1 дінеро)<br><br>Мінімально 10 дінеро</p>
+            <button class="btn btn-confirm" onclick="buy2()">ТАК</button>
+            <button class="btn" onclick="closeModal()">НІ</button>
+        `);
+    }
+    function buy2() {
+        openModal(`<p>Введіть кількість дінеро (мінімум 10):</p><input type="number" id="b-amt" min="10"><button class="btn btn-confirm" onclick="buy3()">ДАЛІ</button>`);
+    }
+    function buy3() {
+        const a = document.getElementById('b-amt').value;
+        if (a < 10) { alert("Мінімум 10!"); return; }
+        openModal(`
+            <p>Перейдіть за <a href="https://send.monobank.ua/jar/3riFR9JCYm" target="_blank" style="color:var(--gold); font-weight:bold;">посиланням MONOBANK</a></p>
+            <p>Внесіть ${a} грн і надішліть скріншот у бот.</p>
+            <button class="btn btn-confirm" onclick="redirectToBot()">ПЕРЕЙТИ ДО БОТА</button>
+        `);
+    }
+    function redirectToBot() {
+        // Посилання веде на команду /buy в боті
+        window.location.href = 'tg://resolve?domain=DineGuerBot&start=buy';
+        closeModal();
+    }
+
+    // --- ТИТУЛИ ---
     function startPrefixSelf() {
         openModal(`<p>Ціна: 15 дінеро/доба. На скільки діб ви хочете придбати?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
     }
@@ -176,25 +201,7 @@
         checkBalanceAndConfirm(d*50, `✒️ Придбати статус адміна на ${d} дні за ${d*50} дінеро?`);
     }
 
-    // --- ПЕРЕКАЗИ ---
-    function startBuyDine() {
-        openModal(`<p>Ви бажаєте купити дінеро?<br>(курс 1 грн - 1 дінеро)<br><br>Мінімально 10 дінеро</p><button class="btn btn-confirm" onclick="buy2()">Так</button><button class="btn" onclick="closeModal()">Ні</button>`);
-    }
-    function buy2() {
-        openModal(`<p>Введіть кількість дінеро (мінімум 10):</p><input type="number" id="b-amt" min="10"><button class="btn btn-confirm" onclick="buy3()">ДАЛІ</button>`);
-    }
-    function buy3() {
-        const a = document.getElementById('b-amt').value;
-        if (a < 10) { alert("Мінімум 10!"); return; }
-        openModal(`
-            <p>Перейдіть за посиланням:<br><a href="https://send.monobank.ua/jar/3riFR9JCYm" target="_blank" style="color:var(--gold)">MONOBANK JAR</a><br><br>Внесіть ${a} грн і надішліть скріншот у бот.</p>
-            <button class="btn btn-confirm" onclick="redirectToBot()">ПЕРЕЙТИ ДО БОТА</button>
-        `);
-    }
-    function redirectToBot() {
-        openModal(`<h3>Скріншот надіслано!</h3><p>Очікуйте повідомлення адміністрації.</p><button class="btn btn-confirm" onclick="window.location.href='tg://resolve?domain=DineGuerBot'">ОК</button>`);
-    }
-
+    // --- ПРОДАТИ/ПЕРЕДАТИ ---
     function startSellDine() {
         openModal(`<p>Курс продажу 10:1, 10 дінеро можна обміняти на 1 грн.<br>Введіть кількість дінеро, яку хочете продати:</p><input type="number" id="s-amt"><button class="btn btn-confirm" onclick="sell2()">ДАЛІ</button>`);
     }
