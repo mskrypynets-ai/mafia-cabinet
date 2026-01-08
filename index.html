@@ -52,6 +52,9 @@
     </style>
 </head>
 <body>
+    <audio id="clickSound" src="typewriter.mp3" preload="auto"></audio>
+    <audio id="successSound" src="success.mp3" preload="auto"></audio>
+
 <div class="container" id="app">
     <header>
         <h1>MAFIA GUERRERA</h1>
@@ -100,24 +103,39 @@
     let userBalance = 1849; 
     const dbUsers = { "605880927": "𝐌𝐚𝐤𝐬𝐲𝐦" }; 
 
+    function playClick() {
+        const sound = document.getElementById('clickSound');
+        if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
+    }
+
+    // НОВА ФУНКЦІЯ ДЛЯ УСПІШНОЇ КУПІВЛІ
+    function playSuccess() {
+        const sound = document.getElementById('successSound');
+        if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
+    }
+
     function showView(id) {
+        playClick();
         document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
     function openModal(html) {
+        playClick();
         document.getElementById('modal-content').innerHTML = html;
         document.getElementById('modal').style.display = 'flex';
     }
 
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function closeModal() { 
+        playClick(); 
+        document.getElementById('modal').style.display = 'none'; 
+    }
 
     function checkBalanceAndConfirm(price, confirmText) {
         if (userBalance < price) {
             openModal(`
                 <h3 style="color:#ff4444">❌ ВІДМОВА</h3>
                 <p>Недостатньо дінеро на вашому рахунку!</p>
-                <p>Ваш баланс: ${userBalance} ₲<br>Ціна послуги: ${price} ₲</p>
                 <button class="btn" onclick="closeModal()">ЗАКРИТИ</button>
             `);
             return false;
@@ -130,18 +148,15 @@
     }
 
     function executePurchase(price) {
+        playSuccess(); // ВІДТВОРЮЄМО ЗВУК КАСИ ПРИ КУПІВЛІ
         userBalance -= price;
         document.getElementById('balance-val').innerText = userBalance + " ₲";
-        openModal(`<h3>Дякуємо!</h3><p>Очікуйте сповіщення від сім'ї</p><button class="btn" onclick="closeModal()">ОК</button>`);
+        openModal(`<h3>Успішно!</h3><p>Очікуйте сповіщення від сім'ї</p><button class="btn" onclick="closeModal()">ОК</button>`);
     }
 
-    // КУПИТИ ДІНЕРО (ОНОВЛЕНО)
+    // --- ЛОГІКА КУПІВЛІ ДІНЕРО ---
     function startBuyDine() {
-        openModal(`
-            <p>Ви бажаєте купити дінеро?<br>(курс 1 грн - 1 дінеро)<br><br>Мінімально 10 дінеро</p>
-            <button class="btn btn-confirm" onclick="buy2()">ТАК</button>
-            <button class="btn" onclick="closeModal()">НІ</button>
-        `);
+        openModal(`<p>Ви бажаєте купити дінеро?<br>(курс 1 грн - 1 дінеро)<br><br>Мінімально 10 дінеро</p><button class="btn btn-confirm" onclick="buy2()">ТАК</button><button class="btn" onclick="closeModal()">НІ</button>`);
     }
     function buy2() {
         openModal(`<p>Введіть кількість дінеро (мінімум 10):</p><input type="number" id="b-amt" min="10"><button class="btn btn-confirm" onclick="buy3()">ДАЛІ</button>`);
@@ -156,18 +171,17 @@
         `);
     }
     function redirectToBot() {
-        // Посилання веде на команду /buy в боті
         window.location.href = 'tg://resolve?domain=DineGuerBot&start=buy';
         closeModal();
     }
 
-    // --- ТИТУЛИ ---
+    // --- ІНШІ ФУНКЦІЇ ---
     function startPrefixSelf() {
-        openModal(`<p>Ціна: 15 дінеро/доба. На скільки діб ви хочете придбати?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
+        openModal(`<p>На скільки діб ви хочете придбати?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
     }
     function ps2() {
         const d = document.getElementById('ps-days').value;
-        openModal(`<p>Сума до сплати: ${d*15} дінеро. Вкажіть текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d*15})">ДАЛІ</button>`);
+        openModal(`<p>Вкажіть текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d*15})">ДАЛІ</button>`);
     }
     function psF(total) {
         const text = document.getElementById('ps-text').value;
@@ -175,44 +189,43 @@
     }
 
     function startPrefixFriend() {
-        openModal(`<p>Ціна: 20 дінеро/доба. На скільки діб ви хочете придбати?</p><input type="number" id="pf-days" value="1" min="1"><button class="btn btn-confirm" onclick="pf2()">ДАЛІ</button>`);
+        openModal(`<p>На скільки діб ви хочете придбати?</p><input type="number" id="pf-days" value="1" min="1"><button class="btn btn-confirm" onclick="pf2()">ДАЛІ</button>`);
     }
     function pf2() {
         const d = document.getElementById('pf-days').value;
-        openModal(`<p>Сума до сплати: ${d*20} дінеро. Вкажіть текст префікса:</p><input type="text" id="pf-text"><button class="btn btn-confirm" onclick="pf3(${d*20})">ДАЛІ</button>`);
+        openModal(`<p>Вкажіть текст префікса:</p><input type="text" id="pf-text"><button class="btn btn-confirm" onclick="pf3(${d*20})">ДАЛІ</button>`);
     }
     function pf3(total) {
-        openModal(`<p>Вкажіть ID користувача, якому хочете подарувати префікс:</p><input type="number" id="pf-id"><button class="btn btn-confirm" onclick="pfCheck(${total})">ДАЛІ</button>`);
+        openModal(`<p>Вкажіть ID отримувача:</p><input type="number" id="pf-id"><button class="btn btn-confirm" onclick="pfCheck(${total})">ДАЛІ</button>`);
     }
     function pfCheck(total) {
         const id = document.getElementById('pf-id').value;
-        const text = document.getElementById('pf-text').value;
         if (dbUsers[id]) {
-            checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}' для ${dbUsers[id]} за ${total} дінеро?`);
-        } else { alert("Користувача не має в нашій сім'ї"); }
+            const text = document.getElementById('pf-text').value;
+            checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}' для ${dbUsers[id]}?`);
+        } else { alert("ID не знайдено"); }
     }
 
     function startAdminStatus() {
-        openModal(`<p>Дана послуга коштуватиме 150 дінеро за 3 дні.</p><p>Введіть, на скільки діб ви хочете придбати (мінімально 3):</p><input type="number" id="adm-d" value="3"><button class="btn btn-confirm" onclick="admF()">ДАЛІ</button>`);
+        openModal(`<p>Введіть кількість днів (мін. 3):</p><input type="number" id="adm-d" value="3"><button class="btn btn-confirm" onclick="admF()">ДАЛІ</button>`);
     }
     function admF() {
         const d = document.getElementById('adm-d').value;
-        if (d < 3) { alert("Мінімально 3 дні!"); return; }
-        checkBalanceAndConfirm(d*50, `✒️ Придбати статус адміна на ${d} дні за ${d*50} дінеро?`);
+        if (d < 3) { alert("Мінімум 3 дні!"); return; }
+        checkBalanceAndConfirm(d*50, `✒️ Купити адмін-статус на ${d} днів за ${d*50} дінеро?`);
     }
 
-    // --- ПРОДАТИ/ПЕРЕДАТИ ---
     function startSellDine() {
-        openModal(`<p>Курс продажу 10:1, 10 дінеро можна обміняти на 1 грн.<br>Введіть кількість дінеро, яку хочете продати:</p><input type="number" id="s-amt"><button class="btn btn-confirm" onclick="sell2()">ДАЛІ</button>`);
+        openModal(`<p>Скільки дінеро продати?</p><input type="number" id="s-amt"><button class="btn btn-confirm" onclick="sell2()">ДАЛІ</button>`);
     }
     function sell2() {
         const a = document.getElementById('s-amt').value;
-        if (userBalance < a) { alert("Недостатньо дінеро!"); return; }
-        openModal(`<p>Введіть номер вашої картки для виплати:</p><input type="text" placeholder="5465 5565 8877 9987"><button class="btn btn-confirm" onclick="executePurchase(${a})">ПІДТВЕРДИТИ</button>`);
+        if (userBalance < a) { alert("Недостатньо коштів"); return; }
+        openModal(`<p>Введіть номер картки:</p><input type="text"><button class="btn btn-confirm" onclick="executePurchase(${a})">ПІДТВЕРДИТИ</button>`);
     }
 
     function startTransferDine() {
-        openModal(`<p>Скільки дінеро ви хочете надіслати?<br>(комісія 10%)</p><input type="number" id="tr-amt"><button class="btn btn-confirm" onclick="tr2()">ДАЛІ</button>`);
+        openModal(`<p>Сума переказу:</p><input type="number" id="tr-amt"><button class="btn btn-confirm" onclick="tr2()">ДАЛІ</button>`);
     }
     function tr2() {
         const a = document.getElementById('tr-amt').value;
@@ -221,11 +234,10 @@
     function trF(a) {
         const id = document.getElementById('tr-id').value;
         if (dbUsers[id]) {
-            checkBalanceAndConfirm(a, `Передати ${a} дінеро користувачу ${dbUsers[id]}?<br>Він отримає: ${a*0.9}<br>Комісія: ${a*0.1}`);
-        } else { alert("Користувача не знайдено!"); }
+            checkBalanceAndConfirm(a, `Передати ${a} дінеро ${dbUsers[id]}?`);
+        } else { alert("ID не знайдено"); }
     }
 
-    // --- ЛАВКА ---
     const items = [
         ["Змінити префікс гравцеві", 20], ["Змінити префікс Адміну", 40], ["Зняти варн", 70],
         ["Зняти бан", 250], ["Дати мут адміністратору (30 хв)", 200], ["Захист від таргета", 30],
@@ -238,7 +250,7 @@
         const d = document.createElement('div');
         d.className = 'menu-item full'; d.style.marginBottom = '10px';
         d.innerHTML = `<div>${i[0]} — ${i[1]} ₲</div>`;
-        d.onclick = () => checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]} за ${i[1]} дінеро?`);
+        d.onclick = () => { checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]}?`); };
         shop.appendChild(d);
     });
 </script>
