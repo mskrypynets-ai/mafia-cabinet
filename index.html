@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAFIA GUERRERA CABINET</title>
+    <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        :root { --gold: #c5a059; --dark: #0a0a0a; --btn-bg: rgba(20, 20, 20, 0.95); }
+        body {
+            background-color: var(--dark); color: #d1d1d1; font-family: 'Special Elite', cursive; margin: 0;
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('background.jpg');
+            background-size: cover; background-attachment: fixed; background-position: center;
+        }
+        .container { max-width: 450px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        header { text-align: center; border-bottom: 2px double var(--gold); padding-bottom: 15px; margin-bottom: 25px; }
+        h1 { font-family: 'Old Standard TT', serif; color: var(--gold); margin: 0; letter-spacing: 3px; text-transform: uppercase; font-size: 26px; }
+        .est-text { font-size: 10px; color: #888; margin-top: 5px; letter-spacing: 1px; }
+        .balance-card {
+            background: rgba(15, 15, 15, 0.95); border: 1px solid var(--gold);
+            padding: 20px; text-align: center; margin-bottom: 25px;
+            box-shadow: inset 0 0 20px rgba(197, 160, 89, 0.1);
+        }
+        .greeting { font-size: 14px; color: var(--gold); margin-top: 10px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .menu-item {
+            background: var(--btn-bg); border: 1px solid #333; padding: 20px 10px;
+            text-align: center; cursor: pointer; display: flex; flex-direction: column;
+            justify-content: center; min-height: 100px; font-family: 'Special Elite', cursive;
+        }
+        .menu-item.full { grid-column: span 2; min-height: 80px; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #111; border: 1px solid var(--gold); padding: 25px;
+            width: 85%; text-align: center; font-family: 'Special Elite', cursive;
+        }
+        input {
+            background: #000 !important; border: 1px solid var(--gold) !important; color: #fff !important;
+            padding: 12px; font-family: 'Special Elite', cursive !important; width: 85%;
+            margin: 10px 0; text-align: center; font-size: 16px; outline: none;
+        }
+        .btn {
+            background: transparent; border: 1px solid var(--gold); color: var(--gold);
+            padding: 10px 15px; cursor: pointer; font-family: 'Special Elite', cursive;
+            margin: 5px; text-transform: uppercase; font-size: 12px;
+        }
+        .btn-confirm { background: var(--gold); color: #000; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <header>
+        <h1>MAFIA GUERRERA</h1>
+        <div class="est-text">EST. 08.11.2021 | ВСЕ БАЧУ. ВСЕ ЧУЮ.</div>
+    </header>
+
+    <div class="balance-card">
+        <div style="font-size: 10px; letter-spacing: 2px;">ПОТОЧНИЙ БАЛАНС</div>
+        <div id="balance-val" style="font-size: 36px; color: #fff; margin: 5px 0;">1 849 ₲</div>
+        <div class="greeting">Buenos días, <span id="user-name">Maksym</span>!</div>
+    </div>
+
+    <div id="main-menu" class="menu-grid">
+        <div class="menu-item" onclick="showView('prefix-view')">✒️ ОФОРМИТИ ТИТУЛ В СІМ'Ї</div>
+        <div class="menu-item" onclick="showView('transfer-view')">💸 ПЕРЕКАЗ КОШТІВ</div>
+        <div class="menu-item full" onclick="showView('shop-view')">🎩 ЛАВКА БУТЛЕГЕРА</div>
+    </div>
+<div id="prefix-view" class="hidden">
+        <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
+        <div class="menu-grid" style="margin-top:20px">
+            <div class="menu-item" onclick="startPrefixSelf()">ПРЕФІКС ДЛЯ СЕБЕ</div>
+            <div class="menu-item" onclick="startPrefixFriend()">ПРЕФІКС ДЛЯ ДРУГА</div>
+            <div class="menu-item full" onclick="startAdminStatus()">СТАТУС АДМІНА</div>
+        </div>
+    </div>
+
+    <div id="transfer-view" class="hidden">
+        <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
+        <div class="menu-grid" style="margin-top:20px">
+            <div class="menu-item" onclick="startBuyDine()">КУПИТИ ДІНЕРО</div>
+            <div class="menu-item" onclick="startSellDine()">ПРОДАТИ ДІНЕРО</div>
+            <div class="menu-item full" onclick="startTransferDine()">ПЕРЕДАТИ ДІНЕРО</div>
+        </div>
+    </div>
+
+    <div id="shop-view" class="hidden">
+        <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
+        <div id="shop-container" style="margin-top:20px"></div>
+    </div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content" id="modal-content"></div>
+</div>
+<script>
+    let userBalance = 1849; 
+    const dbUsers = { "605880927": "𝐌𝐚𝐤𝐬𝐲𝐦" }; 
+
+    function showView(id) {
+        document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function openModal(html) {
+        document.getElementById('modal-content').innerHTML = html;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    // Універсальна перевірка балансу
+    function checkBalanceAndConfirm(price, confirmText) {
+        if (userBalance < price) {
+            openModal(`
+                <h3 style="color:#ff4444">❌ ВІДМОВА</h3>
+                <p>Недостатньо дінеро на вашому рахунку!</p>
+                <p>Ваш баланс: ${userBalance} ₲<br>Ціна послуги: ${price} ₲</p>
+                <button class="btn" onclick="closeModal()">ЗАКРИТИ</button>
+            `);
+            return false;
+        }
+        openModal(`
+            <p>${confirmText}</p>
+            <button class="btn btn-confirm" onclick="executePurchase(${price})">Підтвердити</button>
+            <button class="btn" onclick="closeModal()">Скасувати</button>
+        `);
+    }
+
+    function executePurchase(price) {
+        userBalance -= price;
+        document.getElementById('balance-val').innerText = userBalance + " ₲";
+        openModal(`<h3>Дякуємо!</h3><p>Очікуйте сповіщення від сім'ї</p><button class="btn" onclick="closeModal()">ОК</button>`);
+    }
+
+    // --- ПРЕФІКСИ ---
+    function startPrefixSelf() {
+        openModal(`<p>Ціна: 15 дінеро/доба. На скільки діб ви хочете придбати?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
+    }
+    function ps2() {
+        const d = document.getElementById('ps-days').value;
+        openModal(`<p>Сума до сплати: ${d*15} дінеро. Вкажіть текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d*15})">ДАЛІ</button>`);
+    }
+    function psF(total) {
+        const text = document.getElementById('ps-text').value;
+        checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}' за ${total} дінеро?`);
+    }
+
+    function startPrefixFriend() {
+        openModal(`<p>Ціна: 20 дінеро/доба. На скільки діб ви хочете придбати?</p><input type="number" id="pf-days" value="1" min="1"><button class="btn btn-confirm" onclick="pf2()">ДАЛІ</button>`);
+    }
+    function pf2() {
+        const d = document.getElementById('pf-days').value;
+        openModal(`<p>Сума до сплати: ${d*20} дінеро. Вкажіть текст префікса:</p><input type="text" id="pf-text"><button class="btn btn-confirm" onclick="pf3(${d*20})">ДАЛІ</button>`);
+    }
+    function pf3(total) {
+        openModal(`<p>Вкажіть ID користувача, якому хочете подарувати префікс:</p><input type="number" id="pf-id"><button class="btn btn-confirm" onclick="pfCheck(${total})">ДАЛІ</button>`);
+    }
+    function pfCheck(total) {
+        const id = document.getElementById('pf-id').value;
+        const text = document.getElementById('pf-text').value;
+        if (dbUsers[id]) {
+            checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}' для ${dbUsers[id]} за ${total} дінеро?`);
+        } else { alert("Користувача не має в нашій сім'ї"); }
+    }
+
+    function startAdminStatus() {
+        openModal(`<p>Дана послуга коштуватиме 150 дінеро за 3 дні.</p><p>Введіть, на скільки діб ви хочете придбати (мінімально 3):</p><input type="number" id="adm-d" value="3"><button class="btn btn-confirm" onclick="admF()">ДАЛІ</button>`);
+    }
+    function admF() {
+        const d = document.getElementById('adm-d').value;
+        if (d < 3) { alert("Мінімально 3 дні!"); return; }
+        checkBalanceAndConfirm(d*50, `✒️ Придбати статус адміна на ${d} дні за ${d*50} дінеро?`);
+    }
+
+    // --- ПЕРЕКАЗИ ---
+    function startBuyDine() {
+        openModal(`<p>Ви бажаєте купити дінеро?<br>(курс 1 грн - 1 дінеро)<br><br>Мінімально 10 дінеро</p><button class="btn btn-confirm" onclick="buy2()">Так</button><button class="btn" onclick="closeModal()">Ні</button>`);
+    }
+    function buy2() {
+        openModal(`<p>Введіть кількість дінеро (мінімум 10):</p><input type="number" id="b-amt" min="10"><button class="btn btn-confirm" onclick="buy3()">ДАЛІ</button>`);
+    }
+    function buy3() {
+        const a = document.getElementById('b-amt').value;
+        if (a < 10) { alert("Мінімум 10!"); return; }
+        openModal(`
+            <p>Перейдіть за посиланням:<br><a href="https://send.monobank.ua/jar/3riFR9JCYm" target="_blank" style="color:var(--gold)">MONOBANK JAR</a><br><br>Внесіть ${a} грн і надішліть скріншот у бот.</p>
+            <button class="btn btn-confirm" onclick="redirectToBot()">ПЕРЕЙТИ ДО БОТА</button>
+        `);
+    }
+    function redirectToBot() {
+        openModal(`<h3>Скріншот надіслано!</h3><p>Очікуйте повідомлення адміністрації.</p><button class="btn btn-confirm" onclick="window.location.href='tg://resolve?domain=DineGuerBot'">ОК</button>`);
+    }
+
+    function startSellDine() {
+        openModal(`<p>Курс продажу 10:1, 10 дінеро можна обміняти на 1 грн.<br>Введіть кількість дінеро, яку хочете продати:</p><input type="number" id="s-amt"><button class="btn btn-confirm" onclick="sell2()">ДАЛІ</button>`);
+    }
+    function sell2() {
+        const a = document.getElementById('s-amt').value;
+        if (userBalance < a) { alert("Недостатньо дінеро!"); return; }
+        openModal(`<p>Введіть номер вашої картки для виплати:</p><input type="text" placeholder="5465 5565 8877 9987"><button class="btn btn-confirm" onclick="executePurchase(${a})">ПІДТВЕРДИТИ</button>`);
+    }
+
+    function startTransferDine() {
+        openModal(`<p>Скільки дінеро ви хочете надіслати?<br>(комісія 10%)</p><input type="number" id="tr-amt"><button class="btn btn-confirm" onclick="tr2()">ДАЛІ</button>`);
+    }
+    function tr2() {
+        const a = document.getElementById('tr-amt').value;
+        openModal(`<p>Введіть ID отримувача:</p><input type="number" id="tr-id"><button class="btn btn-confirm" onclick="trF(${a})">ДАЛІ</button>`);
+    }
+    function trF(a) {
+        const id = document.getElementById('tr-id').value;
+        if (dbUsers[id]) {
+            checkBalanceAndConfirm(a, `Передати ${a} дінеро користувачу ${dbUsers[id]}?<br>Він отримає: ${a*0.9}<br>Комісія: ${a*0.1}`);
+        } else { alert("Користувача не знайдено!"); }
+    }
+
+    // --- ЛАВКА ---
+    const items = [
+        ["Змінити префікс гравцеві", 20], ["Змінити префікс Адміну", 40], ["Зняти варн", 70],
+        ["Зняти бан", 250], ["Дати мут адміністратору (30 хв)", 200], ["Захист від таргета", 30],
+        ["Фільтр", 50], ["Проведення супергри", 50], ["Образливий преф (на добу)", 400],
+        ["Зняти образливий преф", 550], ["Бан (на 12 годин)", 200], ["Зняти мут (на 30 хв)", 40],
+        ["Мут учаснику (30 хв)", 50], ["Мут учаснику (60 хв)", 100], ["Бан адміну (12 годин)", 1000]
+    ];
+    const shop = document.getElementById('shop-container');
+    items.forEach(i => {
+        const d = document.createElement('div');
+        d.className = 'menu-item full'; d.style.marginBottom = '10px';
+        d.innerHTML = `<div>${i[0]} — ${i[1]} ₲</div>`;
+        d.onclick = () => checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]} за ${i[1]} дінеро?`);
+        shop.appendChild(d);
+    });
+</script>
+</body>
+</html>
