@@ -166,6 +166,7 @@
     const tg = window.Telegram.WebApp;
     // Формуємо дані для бота (Назва:Ціна)
     const dataToSend = `${serviceName}:${price}`;
+        alert("Відправляю дані: " + dataToSend);
     
     tg.sendData(dataToSend); // ЦЕЙ РЯДОК НАДСИЛАЄ ЛОГ В БОТ
     tg.close(); // Закриваємо додаток
@@ -211,6 +212,7 @@
 </script>
 </body>
 </html>
+
 
 
 
