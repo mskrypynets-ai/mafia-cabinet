@@ -156,23 +156,22 @@
             return false;
         }
         openModal(`
-            <p>${confirmText}</p>
-            <button class="btn btn-confirm" onclick="executePurchase(${price}, '${serviceName}')">ПІДТВЕРДИТИ</button>
-            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        <p>${confirmText}</p>
+        <button class="btn btn-confirm" onclick="executePurchase(${price}, '${serviceName}')">ПІДТВЕРДИТИ</button>
+        <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
         `);
     }
 
     function executePurchase(price, serviceName) {
-    playSuccess(); // Твій звук успіху
-    
-    // Формуємо рядок для бота
-    const dataToSend = `${serviceName}:${price}`;
-    
-    // ВІДПРАВЛЯЄМО ДАНІ В БОТ
-    tg.sendData(dataToSend); 
-    
-    // Закриваємо додаток, щоб юзер повернувся в чат і побачив повідомлення від бота
-    tg.close();
+        // Формуємо дані для бота
+        const data = `${serviceName}:${price}`;
+        
+        // Відправляємо в Telegram
+        const tg = window.Telegram.WebApp;
+        tg.sendData(data); 
+        
+        // Закриваємо вікно
+        tg.close();
     }
 
     // --- ФУНКЦІЇ ДЛЯ МЕНЮ (АДАПТОВАНІ) ---
@@ -209,11 +208,12 @@
         d.className = 'menu-item full';
         d.style.marginBottom = '10px';
         d.innerHTML = `<div>${i[0]} — ${i[1]} ₲</div>`;
-        d.onclick = () => { checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]}?`, i[0]); };
+        d.onclick = () => checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]} за ${i[1]} дінеро?`, i[0]);
         shop.appendChild(d);
     });
 </script>
 </body>
 </html>
+
 
 
