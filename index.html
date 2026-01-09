@@ -163,21 +163,16 @@
     }
 
     function executePurchase(price, serviceName) {
-        playSuccess();
-        // ВІДПРАВКА ДАНИХ У БОТ
-        // Формат "НазваПослуги:Ціна"
-        tg.sendData(`${serviceName}:${price}`); 
-        
-        // Візуальне оновлення
-        userBalance -= price;
-        document.getElementById('balance-val').innerText = userBalance + " ₲";
-        
-        openModal(`<h3>Успішно!</h3><p>Заявку надіслано адмінам.</p>`);
-        
-        // Закриваємо WebApp через 2 секунди, щоб юзер побачив успіх
-        setTimeout(() => {
-            tg.close();
-        }, 2000);
+    playSuccess(); // Твій звук успіху
+    
+    // Формуємо рядок для бота
+    const dataToSend = `${serviceName}:${price}`;
+    
+    // ВІДПРАВЛЯЄМО ДАНІ В БОТ
+    tg.sendData(dataToSend); 
+    
+    // Закриваємо додаток, щоб юзер повернувся в чат і побачив повідомлення від бота
+    tg.close();
     }
 
     // --- ФУНКЦІЇ ДЛЯ МЕНЮ (АДАПТОВАНІ) ---
@@ -220,4 +215,5 @@
 </script>
 </body>
 </html>
+
 
