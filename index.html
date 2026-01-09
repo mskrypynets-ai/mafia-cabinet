@@ -163,15 +163,16 @@
     }
 
     function executePurchase(price, serviceName) {
-        // Формуємо дані для бота
-        const data = `${serviceName}:${price}`;
-        
-        // Відправляємо в Telegram
-        const tg = window.Telegram.WebApp;
-        tg.sendData(data); 
-        
-        // Закриваємо вікно
-        tg.close();
+    const tg = window.Telegram.WebApp;
+    
+    // Формуємо рядок "Назва:Ціна"
+    const dataToSend = `${serviceName}:${price}`;
+    
+    // ВІДПРАВЛЯЄМО ДАНІ В БОТ
+    tg.sendData(dataToSend); 
+    
+    // ЗАКРИВАЄМО ВІКНО
+    tg.close();
     }
 
     // --- ФУНКЦІЇ ДЛЯ МЕНЮ (АДАПТОВАНІ) ---
@@ -214,6 +215,7 @@
 </script>
 </body>
 </html>
+
 
 
 
