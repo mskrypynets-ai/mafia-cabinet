@@ -9,7 +9,7 @@
         :root { --gold: #c5a059; --dark: #0a0a0a; --btn-bg: rgba(20, 20, 20, 0.95); }
         body {
             background-color: var(--dark); color: #d1d1d1; font-family: 'Special Elite', cursive; margin: 0;
-            background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('https://i.imgur.com/your-bg-image.jpg');
+            background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('background.jpg');
             background-size: cover; background-attachment: fixed; background-position: center;
             overflow-x: hidden;
         }
@@ -65,12 +65,13 @@
         .hidden { display: none; }
     </style>
 </head>
-<body>
+<body onclick="playClick()">
     <audio id="successSound" src="success.mp3" preload="auto"></audio>
+    <audio id="clickSound" src="typewriter.mp3" preload="auto"></audio>
 
     <div id="success-overlay">
-        <h2 style="font-size: 40px;">✅</h2>
-        <p id="success-text">Дякуємо!<br>Очікуйте сповіщення від сім'ї</p>
+        <h2 style="font-size: 60px; margin-bottom: 10px;">✅</h2>
+        <p id="success-text" style="font-size: 18px; line-height: 1.5;">Дякуємо!<br>Очікуйте сповіщення від сім'ї</p>
     </div>
 
     <div class="container" id="app">
@@ -123,40 +124,54 @@
     tg.expand();
     tg.enableClosingConfirmation();
 
-    // Дані користувача
+    // Отримання даних з URL (баланс, id, ім'я)
     const urlParams = new URLSearchParams(window.location.search);
     let userBalance = parseFloat(urlParams.get('bal')) || 0;
     const userId = urlParams.get('id');
+    const userNameParam = urlParams.get('name');
 
+    // Налаштування інтерфейсу
     document.getElementById('balance-val').innerText = userBalance.toLocaleString() + " ₲";
-    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || "Гість";
+    // Пріоритет: ім'я з Telegram, якщо немає — з бази даних
+    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || userNameParam || "Користувач";
+
+    // --- ЗВУКОВІ ЕФЕКТИ ---
+    function playClick() {
+        const clickSound = document.getElementById('clickSound');
+        clickSound.currentTime = 0;
+        clickSound.play().catch(() => {});
+    }
 
     // Універсальна функція показу екранів
     function showView(id) {
+        playClick();
         document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
     function openModal(html) {
+        playClick();
         document.getElementById('modal-content').innerHTML = html;
         document.getElementById('modal').style.display = 'flex';
     }
 
     function closeModal() {
+        playClick();
         document.getElementById('modal').style.display = 'none';
     }
 
-    // ФІНАЛЬНИЙ ЕТАП: Звук + Анімація + Відправка
+    // ФІНАЛЬНИЙ ЕТАП: Успіх + 4 секунди звуку + Відправка
     function finishAction(actionData) {
         const sound = document.getElementById('successSound');
         sound.play().catch(() => {});
 
         document.getElementById('success-overlay').style.display = 'flex';
         
+        // Чекаємо 4 секунди, щоб звук success.mp3 пролунав повністю
         setTimeout(() => {
             tg.sendData(JSON.stringify(actionData));
             tg.close();
-        }, 1800);
+        }, 4000);
     }
 
     // --- ПРЕФІКСИ ТА АДМІНКА ---
@@ -169,7 +184,6 @@
             <button class="btn btn-confirm" onclick="confirmPrefix('buy_prefix_self')">ЗАМОВИТИ</button>
             <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
         `);
-        // Живий перерахунок ціни
         document.getElementById('p_days').oninput = (e) => {
             document.getElementById('p_price').innerText = `Ціна: ${e.target.value * 15} ₲`;
         };
@@ -217,7 +231,7 @@
         finishAction({ action: 'buy_admin', days, price: total });
     }
 
-    // --- ПЕРЕКАЗИ ---
+    // --- ПЕРЕКАЗИ ТА ВИВІД ---
     function startBuyDine() {
         openModal(`
             <h3>КУПИТИ ДІНЕРО</h3>
@@ -232,6 +246,24 @@
         const amount = document.getElementById('buy_amount').value;
         if (amount < 10) return alert("Мінімальна сума — 10 грн");
         finishAction({ action: 'buy_dinero', amount });
+    }
+
+    function startSellDine() {
+        openModal(`
+            <h3>ПРОДАТИ ДІНЕРО</h3>
+            <p style="font-size:12px; color:var(--gold)">Курс продажу 10:1.<br>10 дінеро можна обміняти на 1 грн.</p>
+            <input type="number" id="s_amount" placeholder="Сума ₲">
+            <input type="text" id="s_card" placeholder="Номер картки">
+            <button class="btn btn-confirm" onclick="confirmSell()">ПІДТВЕРДИТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
+    }
+
+    function confirmSell() {
+        const amount = document.getElementById('s_amount').value;
+        const card = document.getElementById('s_card').value;
+        if (!amount || !card) return alert("Заповніть всі поля!");
+        finishAction({ action: 'sell_dinero', amount, card });
     }
 
     function startTransferDine() {
@@ -252,29 +284,23 @@
         finishAction({ action: 'transfer', target_id: target, amount });
     }
 
-    function startSellDine() {
-        openModal(`
-            <h3>ПРОДАТИ ДІНЕРО</h3>
-            <input type="number" id="s_amount" placeholder="Сума ₲">
-            <input type="text" id="s_card" placeholder="Номер картки">
-            <button class="btn btn-confirm" onclick="confirmSell()">ВИВЕСТИ</button>
-            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
-        `);
-    }
-
-    function confirmSell() {
-        const amount = document.getElementById('s_amount').value;
-        const card = document.getElementById('s_card').value;
-        if (userBalance < amount) return alert("Недостатньо дінеро!");
-        finishAction({ action: 'sell_dinero', amount, card });
-    }
-
-    // --- ЛАВКА БУТЛЕГЕРА ---
+    // --- ЛАВКА БУТЛЕГЕРА (ТОЧНИЙ ПОРЯДОК) ---
     const items = [
-        ["Змінити префікс гравцеві", 20], ["Змінити префікс Адміну", 40], ["Зняти варн", 70],
-        ["Зняти бан", 250], ["Мут адміну (30 хв)", 200], ["Захист від таргета", 30],
-        ["Фільтр", 50], ["Проведення супергри", 50], ["Образливий преф (доба)", 400],
-        ["Бан (12 годин)", 200], ["Мут учаснику (30 хв)", 50], ["Бан адміну (12 год)", 1000]
+        ["Змінити префікс гравцеві", 20],
+        ["Змінити префікс Адміну", 40],
+        ["Зняти варн", 70],
+        ["Зняти бан", 250],
+        ["Дати мут адміністратору (30 хв)", 200],
+        ["Захист від таргета", 30],
+        ["Фільтр", 50],
+        ["Проведення супергри", 50],
+        ["Образливий преф (на добу)", 400],
+        ["Зняти образливий преф", 550],
+        ["Бан (на 12 годин)", 200],
+        ["Зняти мут (на 30 хв)", 40],
+        ["Мут учаснику (30 хв)", 50],
+        ["Мут учаснику (60 хв)", 100],
+        ["Бан адміну (12 годин)", 1000]
     ];
 
     const shop = document.getElementById('shop-container');
@@ -284,6 +310,7 @@
         d.style.marginBottom = '10px';
         d.innerHTML = `<div>${i[0]}</div><div style="color:var(--gold)">${i[1]} ₲</div>`;
         d.onclick = () => {
+            playClick();
             if (userBalance < i[1]) return alert("Недостатньо дінеро!");
             openModal(`
                 <p>Придбати "${i[0]}" за ${i[1]} ₲?</p>
@@ -296,6 +323,7 @@
 </script>
 </body>
 </html>
+
 
 
 
