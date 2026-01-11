@@ -127,6 +127,25 @@
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
     }
 
+    // Функція, яка викликається при фінальному кліку в Mini App
+function handleConfirmPurchase() {
+    // 1. Відтворюємо звук негайно (це дозволено, бо є клік)
+    const audio = new Audio('success.mp3');
+    audio.play().catch(function(error) {
+        console.log("Звук заблоковано браузером:", error);
+    });
+
+    // 2. Відправляємо дані боту
+    const data = `${currentServiceName}:${currentPrice}`;
+    tg.sendData(data);
+    
+    // 3. Закриваємо додаток (можна з невеликою затримкою 500мс, щоб встиг піти звук)
+    setTimeout(() => {
+        tg.close();
+    }, 500);
+    
+    }
+
     // --- ЛОГІКА ВІКНО ---
     function showView(id) {
         playClick();
@@ -212,6 +231,7 @@
 </script>
 </body>
 </html>
+
 
 
 
