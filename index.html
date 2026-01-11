@@ -9,225 +9,294 @@
         :root { --gold: #c5a059; --dark: #0a0a0a; --btn-bg: rgba(20, 20, 20, 0.95); }
         body {
             background-color: var(--dark); color: #d1d1d1; font-family: 'Special Elite', cursive; margin: 0;
-            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('background.jpg');
+            background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('https://i.imgur.com/your-bg-image.jpg');
             background-size: cover; background-attachment: fixed; background-position: center;
+            overflow-x: hidden;
         }
-        .container { max-width: 450px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .container { max-width: 450px; margin: 0 auto; padding: 20px; box-sizing: border-box; min-height: 100vh; }
         header { text-align: center; border-bottom: 2px double var(--gold); padding-bottom: 15px; margin-bottom: 25px; }
-        h1 { font-family: 'Old Standard TT', serif; color: var(--gold); margin: 0; letter-spacing: 3px; text-transform: uppercase; font-size: 26px; }
-        .est-text { font-size: 10px; color: #888; margin-top: 5px; letter-spacing: 1px; }
+        h1 { font-family: 'Old Standard TT', serif; color: var(--gold); margin: 0; letter-spacing: 3px; text-transform: uppercase; font-size: 24px; }
+        
         .balance-card {
             background: rgba(15, 15, 15, 0.95); border: 1px solid var(--gold);
             padding: 20px; text-align: center; margin-bottom: 25px;
             box-shadow: inset 0 0 20px rgba(197, 160, 89, 0.1);
         }
-        .greeting { font-size: 14px; color: var(--gold); margin-top: 10px; }
+        .balance-val { font-size: 32px; color: #fff; margin: 5px 0; font-weight: bold; }
+        
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .menu-item {
-            background: var(--btn-bg); border: 1px solid #333; padding: 20px 10px;
+            background: var(--btn-bg); border: 1px solid #333; padding: 15px 10px;
             text-align: center; cursor: pointer; display: flex; flex-direction: column;
-            justify-content: center; min-height: 100px; font-family: 'Special Elite', cursive;
+            justify-content: center; min-height: 80px; transition: 0.3s;
         }
-        .menu-item.full { grid-column: span 2; min-height: 80px; }
+        .menu-item:active { transform: scale(0.95); border-color: var(--gold); }
+        .menu-item.full { grid-column: span 2; min-height: 60px; }
+
+        /* Модальне вікно */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); z-index: 1000; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
         }
         .modal-content {
             background: #111; border: 1px solid var(--gold); padding: 25px;
-            width: 85%; text-align: center; font-family: 'Special Elite', cursive;
+            width: 85%; text-align: center; position: relative;
         }
+        
         input {
-            background: #000 !important; border: 1px solid var(--gold) !important; color: #fff !important;
-            padding: 12px; font-family: 'Special Elite', cursive !important; width: 85%;
-            margin: 10px 0; text-align: center; font-size: 16px; outline: none;
+            background: #000; border: 1px solid var(--gold); color: #fff;
+            padding: 12px; font-family: 'Special Elite', cursive; width: 90%;
+            margin: 10px 0; text-align: center; outline: none;
         }
+        
         .btn {
             background: transparent; border: 1px solid var(--gold); color: var(--gold);
-            padding: 10px 15px; cursor: pointer; font-family: 'Special Elite', cursive;
-            margin: 5px; text-transform: uppercase; font-size: 12px;
+            padding: 10px 20px; cursor: pointer; font-family: 'Special Elite', cursive;
+            margin: 10px 5px; text-transform: uppercase;
         }
         .btn-confirm { background: var(--gold); color: #000; font-weight: bold; }
+        
+        /* Екран успіху */
+        #success-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 2000; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: var(--gold);
+        }
         .hidden { display: none; }
     </style>
 </head>
 <body>
-    <audio id="clickSound" src="typewriter.mp3" preload="auto"></audio>
     <audio id="successSound" src="success.mp3" preload="auto"></audio>
 
-<div class="container" id="app">
-    <header>
-        <h1>MAFIA GUERRERA</h1>
-        <div class="est-text">EST. 08.11.2021 | ВСЕ БАЧУ. ВСЕ ЧУЮ.</div>
-    </header>
-
-    <div class="balance-card">
-        <div style="font-size: 10px; letter-spacing: 2px;">ПОТОЧНИЙ БАЛАНС</div>
-        <div id="balance-val" style="font-size: 36px; color: #fff; margin: 5px 0;">0 ₲</div>
-        <div class="greeting">Buenos días, <span id="user-name">Гість</span>!</div>
+    <div id="success-overlay">
+        <h2 style="font-size: 40px;">✅</h2>
+        <p id="success-text">Дякуємо!<br>Очікуйте сповіщення від сім'ї</p>
     </div>
 
-    <div id="main-menu" class="menu-grid">
-        <div class="menu-item" onclick="showView('prefix-view')">✒️ ОФОРМИТИ ТИТУЛ В СІМ'Ї</div>
-        <div class="menu-item" onclick="showView('transfer-view')">💸 ПЕРЕКАЗ КОШТІВ</div>
-        <div class="menu-item full" onclick="showView('shop-view')">🎩 ЛАВКА БУТЛЕГЕРА</div>
-    </div>
+    <div class="container" id="app">
+        <header>
+            <h1>MAFIA GUERRERA</h1>
+            <div style="font-size: 10px; color: #888; margin-top: 5px;">EST. 08.11.2021</div>
+        </header>
 
-    <div id="prefix-view" class="hidden">
-        <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
-        <div class="menu-grid" style="margin-top:20px">
-            <div class="menu-item" onclick="startPrefixSelf()">ПРЕФІКС ДЛЯ СЕБЕ</div>
-            <div class="menu-item" onclick="startPrefixFriend()">ПРЕФІКС ДЛЯ ДРУГА</div>
-            <div class="menu-item full" onclick="startAdminStatus()">СТАТУС АДМІНА</div>
+        <div class="balance-card">
+            <div style="font-size: 10px; letter-spacing: 2px;">ВАШ БАЛАНС</div>
+            <div id="balance-val" class="balance-val">0 ₲</div>
+            <div id="user-name" style="color: var(--gold); font-size: 14px;">Завантаження...</div>
         </div>
-    </div>
 
-    <div id="transfer-view" class="hidden">
-        <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
-        <div class="menu-grid" style="margin-top:20px">
-            <div class="menu-item" onclick="startBuyDine()">КУПИТИ ДІНЕРО</div>
-            <div class="menu-item" onclick="startSellDine()">ПРОДАТИ ДІНЕРО</div>
-            <div class="menu-item full" onclick="startTransferDine()">ПЕРЕДАТИ ДІНЕРО</div>
+        <div id="main-menu" class="menu-grid">
+            <div class="menu-item" onclick="showView('prefix-view')">✒️ ТИТУЛИ ТА АДМІНКА</div>
+            <div class="menu-item" onclick="showView('transfer-view')">💸 ДІНЕРО ТА ПЕРЕКАЗИ</div>
+            <div class="menu-item full" onclick="showView('shop-view')">🎩 ЛАВКА БУТЛЕГЕРА</div>
         </div>
-    </div>
+<div id="prefix-view" class="hidden">
+            <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
+            <div class="menu-grid" style="margin-top:20px">
+                <div class="menu-item" onclick="startPrefixSelf()">ПРЕФІКС ДЛЯ СЕБЕ (15 ₲/дн)</div>
+                <div class="menu-item" onclick="startPrefixFriend()">ПРЕФІКС ДЛЯ ДРУГА (20 ₲/дн)</div>
+                <div class="menu-item full" onclick="startAdminStatus()">👑 СТАТУС АДМІНА (50 ₲/дн)</div>
+            </div>
+        </div>
 
-    <div id="shop-view" class="hidden">
-        <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
-        <div id="shop-container" style="margin-top:20px"></div>
-    </div>
-</div>
+        <div id="transfer-view" class="hidden">
+            <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
+            <div class="menu-grid" style="margin-top:20px">
+                <div class="menu-item" onclick="startBuyDine()">💳 КУПИТИ ДІНЕРО</div>
+                <div class="menu-item" onclick="startSellDine()">📤 ПРОДАТИ (ВИВІД)</div>
+                <div class="menu-item full" onclick="startTransferDine()">🔄 ПЕРЕДАТИ ДРУГОВІ</div>
+            </div>
+        </div>
 
-<div id="modal" class="modal">
-    <div class="modal-content" id="modal-content"></div>
-</div>
+        <div id="shop-view" class="hidden">
+            <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
+            <div id="shop-container" style="margin-top:20px; max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                </div>
+        </div>
+    </div> <div id="modal" class="modal">
+        <div class="modal-content" id="modal-content">
+            </div>
+    </div>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
+    tg.enableClosingConfirmation();
 
+    // Дані користувача
     const urlParams = new URLSearchParams(window.location.search);
     let userBalance = parseFloat(urlParams.get('bal')) || 0;
     const userId = urlParams.get('id');
 
-    document.getElementById('balance-val').innerText = userBalance + " ₲";
-    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || "Maksym";
+    document.getElementById('balance-val').innerText = userBalance.toLocaleString() + " ₲";
+    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || "Гість";
 
-    function playClick() {
-        const sound = document.getElementById('clickSound');
-        if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
-    }
-
-    function sendToBot(payload) {
-        const audio = document.getElementById('successSound');
-        if (audio) {
-            audio.play().then(() => {
-                setTimeout(() => {
-                    tg.sendData(JSON.stringify(payload));
-                    tg.close();
-                }, 500);
-            }).catch(e => {
-                tg.sendData(JSON.stringify(payload));
-                tg.close();
-            });
-        }
-    }
-
+    // Універсальна функція показу екранів
     function showView(id) {
-        playClick();
         document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
     function openModal(html) {
-        playClick();
         document.getElementById('modal-content').innerHTML = html;
         document.getElementById('modal').style.display = 'flex';
     }
 
-    function closeModal() { 
-        playClick(); 
-        document.getElementById('modal').style.display = 'none'; 
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
     }
-// --- ПРЕФІКСИ ---
+
+    // ФІНАЛЬНИЙ ЕТАП: Звук + Анімація + Відправка
+    function finishAction(actionData) {
+        const sound = document.getElementById('successSound');
+        sound.play().catch(() => {});
+
+        document.getElementById('success-overlay').style.display = 'flex';
+        
+        setTimeout(() => {
+            tg.sendData(JSON.stringify(actionData));
+            tg.close();
+        }, 1800);
+    }
+
+    // --- ПРЕФІКСИ ТА АДМІНКА ---
     function startPrefixSelf() {
-        openModal(`<p>На скільки діб?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
-    }
-    function ps2() {
-        const d = document.getElementById('ps-days').value;
-        openModal(`<p>Текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d})">ДАЛІ</button>`);
-    }
-    function psF(days) {
-        const text = document.getElementById('ps-text').value;
-        sendToBot({ action: "buy_prefix_self", days: days, text: text });
+        openModal(`
+            <h3>ПРЕФІКС ДЛЯ СЕБЕ</h3>
+            <input type="number" id="p_days" placeholder="Кількість днів" min="1" value="30">
+            <input type="text" id="p_text" placeholder="Текст префікса">
+            <p id="p_price">Ціна: 450 ₲</p>
+            <button class="btn btn-confirm" onclick="confirmPrefix('buy_prefix_self')">ЗАМОВИТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
+        // Живий перерахунок ціни
+        document.getElementById('p_days').oninput = (e) => {
+            document.getElementById('p_price').innerText = `Ціна: ${e.target.value * 15} ₲`;
+        };
     }
 
     function startPrefixFriend() {
         openModal(`
-            <p>На скільки діб?</p><input type="number" id="pf-days" value="1" min="1">
-            <p>Текст префікса:</p><input type="text" id="pf-text">
-            <p>ID отримувача:</p><input type="number" id="pf-id">
-            <button class="btn btn-confirm" onclick="confirmPrefixFriend()">ДАЛІ</button>
+            <h3>ПРЕФІКС ДЛЯ ДРУГА</h3>
+            <input type="number" id="p_target" placeholder="ID друга (цифри)">
+            <input type="number" id="p_days" placeholder="Кількість днів" min="1" value="30">
+            <input type="text" id="p_text" placeholder="Текст префікса">
+            <button class="btn btn-confirm" onclick="confirmPrefix('buy_prefix_friend')">ПОДАРУВАТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
         `);
     }
-    function confirmPrefixFriend() {
-        sendToBot({
-            action: "buy_prefix_friend",
-            days: document.getElementById('pf-days').value,
-            text: document.getElementById('pf-text').value,
-            target_id: document.getElementById('pf-id').value
-        });
+
+    function confirmPrefix(action) {
+        const days = document.getElementById('p_days').value;
+        const text = document.getElementById('p_text').value;
+        const target = document.getElementById('p_target')?.value || null;
+        const pricePerDay = action === 'buy_prefix_self' ? 15 : 20;
+        const total = days * pricePerDay;
+
+        if (!text || days < 1) return alert("Заповніть всі поля!");
+        if (userBalance < total) return alert("Недостатньо дінеро!");
+
+        finishAction({ action, days, text, target_id: target, price: total });
     }
 
-    // --- АДМІНКА ТА ІНШЕ ---
     function startAdminStatus() {
-        openModal(`<p>Кількість діб (мін. 3):</p><input type="number" id="adm-days" value="3" min="3"><button class="btn btn-confirm" onclick="confirmAdmin()">ДАЛІ</button>`);
+        openModal(`
+            <h3>👑 СТАТУС АДМІНА</h3>
+            <p>Ціна: 50 ₲ / день</p>
+            <input type="number" id="adm_days" placeholder="Кількість днів" min="3" value="3">
+            <button class="btn btn-confirm" onclick="confirmAdmin()">ПРИДБАТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
     }
+
     function confirmAdmin() {
-        sendToBot({ action: "buy_admin", days: document.getElementById('adm-days').value });
+        const days = document.getElementById('adm_days').value;
+        const total = days * 50;
+        if (days < 3) return alert("Мінімальне замовлення — 3 дні!");
+        if (userBalance < total) return alert("Недостатньо дінеро!");
+        finishAction({ action: 'buy_admin', days, price: total });
     }
 
+    // --- ПЕРЕКАЗИ ---
     function startBuyDine() {
-        openModal(`<p>Введіть кількість дінеро (мін. 10):</p><input type="number" id="buy-amount" value="10" min="10"><button class="btn btn-confirm" onclick="confirmBuy()">ДАЛІ</button>`);
-    }
-    function confirmBuy() {
-        sendToBot({ action: "buy_dinero", amount: document.getElementById('buy-amount').value });
+        openModal(`
+            <h3>КУПИТИ ДІНЕРО</h3>
+            <p>1 грн = 1 ₲</p>
+            <input type="number" id="buy_amount" placeholder="Сума (грн)" min="10">
+            <button class="btn btn-confirm" onclick="confirmBuy()">ОТРИМАТИ РЕКВІЗИТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
     }
 
-    function startSellDine() {
-        openModal(`<p>Сума дінеро:</p><input type="number" id="sell-amount"><p>Номер картки:</p><input type="text" id="sell-card"><button class="btn btn-confirm" onclick="confirmSell()">ПРОДАТИ</button>`);
-    }
-    function confirmSell() {
-        sendToBot({ action: "sell_dinero", amount: document.getElementById('sell-amount').value, card: document.getElementById('sell-card').value });
+    function confirmBuy() {
+        const amount = document.getElementById('buy_amount').value;
+        if (amount < 10) return alert("Мінімальна сума — 10 грн");
+        finishAction({ action: 'buy_dinero', amount });
     }
 
     function startTransferDine() {
-        openModal(`<p>Сума переказу:</p><input type="number" id="t-amount"><p>ID отримувача:</p><input type="number" id="t-id"><button class="btn btn-confirm" onclick="confirmTrans()">ПЕРЕДАТИ</button>`);
+        openModal(`
+            <h3>ПЕРЕДАТИ ДІНЕРО</h3>
+            <input type="number" id="t_target" placeholder="ID отримувача">
+            <input type="number" id="t_amount" placeholder="Сума ₲">
+            <p style="font-size:10px">Комісія сім'ї: 10%</p>
+            <button class="btn btn-confirm" onclick="confirmTransfer()">ВІДПРАВИТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
     }
-    function confirmTrans() {
-        sendToBot({ action: "transfer", amount: document.getElementById('t-amount').value, target_id: document.getElementById('t-id').value });
+
+    function confirmTransfer() {
+        const target = document.getElementById('t_target').value;
+        const amount = document.getElementById('t_amount').value;
+        if (userBalance < amount) return alert("Недостатньо коштів!");
+        finishAction({ action: 'transfer', target_id: target, amount });
+    }
+
+    function startSellDine() {
+        openModal(`
+            <h3>ПРОДАТИ ДІНЕРО</h3>
+            <input type="number" id="s_amount" placeholder="Сума ₲">
+            <input type="text" id="s_card" placeholder="Номер картки">
+            <button class="btn btn-confirm" onclick="confirmSell()">ВИВЕСТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
+    }
+
+    function confirmSell() {
+        const amount = document.getElementById('s_amount').value;
+        const card = document.getElementById('s_card').value;
+        if (userBalance < amount) return alert("Недостатньо дінеро!");
+        finishAction({ action: 'sell_dinero', amount, card });
     }
 
     // --- ЛАВКА БУТЛЕГЕРА ---
     const items = [
         ["Змінити префікс гравцеві", 20], ["Змінити префікс Адміну", 40], ["Зняти варн", 70],
-        ["Зняти бан", 250], ["Дати мут адміністратору (30 хв)", 200], ["Захист від таргета", 30],
-        ["Фільтр", 50], ["Проведення супергри", 50], ["Образливий преф (на добу)", 400],
-        ["Зняти образливий преф", 550], ["Бан (на 12 годин)", 200], ["Зняти мут (на 30 хв)", 40],
-        ["Мут учаснику (30 хв)", 50], ["Мут учаснику (60 хв)", 100], ["Бан адміну (12 годин)", 1000]
+        ["Зняти бан", 250], ["Мут адміну (30 хв)", 200], ["Захист від таргета", 30],
+        ["Фільтр", 50], ["Проведення супергри", 50], ["Образливий преф (доба)", 400],
+        ["Бан (12 годин)", 200], ["Мут учаснику (30 хв)", 50], ["Бан адміну (12 год)", 1000]
     ];
-    
+
     const shop = document.getElementById('shop-container');
-    items.forEach((i, idx) => {
+    items.forEach(i => {
         const d = document.createElement('div');
         d.className = 'menu-item full';
         d.style.marginBottom = '10px';
-        d.innerHTML = `<div>${i[0]} — ${i[1]} ₲</div>`;
-        d.onclick = () => sendToBot({ action: "other_service", name: i[0], price: i[1], id: idx });
+        d.innerHTML = `<div>${i[0]}</div><div style="color:var(--gold)">${i[1]} ₲</div>`;
+        d.onclick = () => {
+            if (userBalance < i[1]) return alert("Недостатньо дінеро!");
+            openModal(`
+                <p>Придбати "${i[0]}" за ${i[1]} ₲?</p>
+                <button class="btn btn-confirm" onclick="finishAction({action:'shop_buy', item:'${i[0]}', price:${i[1]}})">ПІДТВЕРДИТИ</button>
+                <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+            `);
+        };
         shop.appendChild(d);
     });
 </script>
 </body>
 </html>
+
 
 
 
