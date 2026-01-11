@@ -63,8 +63,8 @@
 
     <div class="balance-card">
         <div style="font-size: 10px; letter-spacing: 2px;">ПОТОЧНИЙ БАЛАНС</div>
-        <div id="balance-val" style="font-size: 36px; color: #fff; margin: 5px 0;">1 849 ₲</div>
-        <div class="greeting">Buenos días, <span id="user-name">Maksym</span>!</div>
+        <div id="balance-val" style="font-size: 36px; color: #fff; margin: 5px 0;">0 ₲</div>
+        <div class="greeting">Buenos días, <span id="user-name">Гість</span>!</div>
     </div>
 
     <div id="main-menu" class="menu-grid">
@@ -72,6 +72,7 @@
         <div class="menu-item" onclick="showView('transfer-view')">💸 ПЕРЕКАЗ КОШТІВ</div>
         <div class="menu-item full" onclick="showView('shop-view')">🎩 ЛАВКА БУТЛЕГЕРА</div>
     </div>
+
     <div id="prefix-view" class="hidden">
         <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
         <div class="menu-grid" style="margin-top:20px">
@@ -102,51 +103,35 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
-    tg.expand(); // Розгортаємо на весь екран
+    tg.expand();
 
-    // --- ОТРИМАННЯ ДАНИХ ІЗ ПОСИЛАННЯ (URL) ---
     const urlParams = new URLSearchParams(window.location.search);
-    // Беремо баланс (bal) та ID користувача (id)
-    const initialBalance = parseFloat(urlParams.get('bal')) || 0;
+    let userBalance = parseFloat(urlParams.get('bal')) || 0;
     const userId = urlParams.get('id');
 
-    let userBalance = initialBalance;
-
-    // Оновлюємо інтерфейс даними
     document.getElementById('balance-val').innerText = userBalance + " ₲";
     document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || "Maksym";
 
-    // --- ЗВУКИ ---
     function playClick() {
         const sound = document.getElementById('clickSound');
         if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
     }
 
-    function playSuccess() {
-        const sound = document.getElementById('successSound');
-        if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
+    function sendToBot(payload) {
+        const audio = document.getElementById('successSound');
+        if (audio) {
+            audio.play().then(() => {
+                setTimeout(() => {
+                    tg.sendData(JSON.stringify(payload));
+                    tg.close();
+                }, 500);
+            }).catch(e => {
+                tg.sendData(JSON.stringify(payload));
+                tg.close();
+            });
+        }
     }
 
-    // Функція, яка викликається при фінальному кліку в Mini App
-function handleConfirmPurchase() {
-    // 1. Відтворюємо звук негайно (це дозволено, бо є клік)
-    const audio = new Audio('success.mp3');
-    audio.play().catch(function(error) {
-        console.log("Звук заблоковано браузером:", error);
-    });
-
-    // 2. Відправляємо дані боту
-    const data = `${currentServiceName}:${currentPrice}`;
-    tg.sendData(data);
-    
-    // 3. Закриваємо додаток (можна з невеликою затримкою 500мс, щоб встиг піти звук)
-    setTimeout(() => {
-        tg.close();
-    }, 500);
-    
-    }
-
-    // --- ЛОГІКА ВІКНО ---
     function showView(id) {
         playClick();
         document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
@@ -163,54 +148,66 @@ function handleConfirmPurchase() {
         playClick(); 
         document.getElementById('modal').style.display = 'none'; 
     }
-
-    // --- КУПІВЛЯ ---
-    function checkBalanceAndConfirm(price, confirmText, serviceName) {
-        if (userBalance < price) {
-            openModal(`
-                <h3 style="color:#ff4444">❌ ВІДМОВА</h3>
-                <p>Недостатньо дінеро на вашому рахунку!</p>
-                <button class="btn" onclick="closeModal()">ЗАКРИТИ</button>
-            `);
-            return false;
-        }
-        openModal(`
-        <p>${confirmText}</p>
-        <button class="btn btn-confirm" onclick="executePurchase(${price}, '${serviceName}')">ПІДТВЕРДИТИ</button>
-        <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
-        `);
-    }
-
-    function executePurchase(price, serviceName) {
-    const tg = window.Telegram.WebApp;
-    // Формуємо дані для бота (Назва:Ціна)
-    const dataToSend = `${serviceName}:${price}`;
-        alert("Відправляю дані: " + dataToSend);
-    
-    tg.sendData(dataToSend); // ЦЕЙ РЯДОК НАДСИЛАЄ ЛОГ В БОТ
-    tg.close(); // Закриваємо додаток
-    }
-
-    // --- ФУНКЦІЇ ДЛЯ МЕНЮ (АДАПТОВАНІ) ---
+// --- ПРЕФІКСИ ---
     function startPrefixSelf() {
-        openModal(`<p>Кількість діб:</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
+        openModal(`<p>На скільки діб?</p><input type="number" id="ps-days" value="1" min="1"><button class="btn btn-confirm" onclick="ps2()">ДАЛІ</button>`);
     }
     function ps2() {
         const d = document.getElementById('ps-days').value;
-        openModal(`<p>Текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d*15})">ДАЛІ</button>`);
+        openModal(`<p>Текст префікса:</p><input type="text" id="ps-text"><button class="btn btn-confirm" onclick="psF(${d})">ДАЛІ</button>`);
     }
-    function psF(total) {
+    function psF(days) {
         const text = document.getElementById('ps-text').value;
-        checkBalanceAndConfirm(total, `✒️ Купити префікс '${text}'?`, `Префікс: ${text}`);
+        sendToBot({ action: "buy_prefix_self", days: days, text: text });
     }
 
-    // --- ПЕРЕКАЗИ (Бот обробить через посилання) ---
+    function startPrefixFriend() {
+        openModal(`
+            <p>На скільки діб?</p><input type="number" id="pf-days" value="1" min="1">
+            <p>Текст префікса:</p><input type="text" id="pf-text">
+            <p>ID отримувача:</p><input type="number" id="pf-id">
+            <button class="btn btn-confirm" onclick="confirmPrefixFriend()">ДАЛІ</button>
+        `);
+    }
+    function confirmPrefixFriend() {
+        sendToBot({
+            action: "buy_prefix_friend",
+            days: document.getElementById('pf-days').value,
+            text: document.getElementById('pf-text').value,
+            target_id: document.getElementById('pf-id').value
+        });
+    }
+
+    // --- АДМІНКА ТА ІНШЕ ---
+    function startAdminStatus() {
+        openModal(`<p>Кількість діб (мін. 3):</p><input type="number" id="adm-days" value="3" min="3"><button class="btn btn-confirm" onclick="confirmAdmin()">ДАЛІ</button>`);
+    }
+    function confirmAdmin() {
+        sendToBot({ action: "buy_admin", days: document.getElementById('adm-days').value });
+    }
+
     function startBuyDine() {
-        tg.openTelegramLink('https://t.me/DineroGM_bot?start=buy');
-        tg.close();
+        openModal(`<p>Введіть кількість дінеро (мін. 10):</p><input type="number" id="buy-amount" value="10" min="10"><button class="btn btn-confirm" onclick="confirmBuy()">ДАЛІ</button>`);
+    }
+    function confirmBuy() {
+        sendToBot({ action: "buy_dinero", amount: document.getElementById('buy-amount').value });
     }
 
-    // --- ГЕНЕРАЦІЯ ЛАВКИ ---
+    function startSellDine() {
+        openModal(`<p>Сума дінеро:</p><input type="number" id="sell-amount"><p>Номер картки:</p><input type="text" id="sell-card"><button class="btn btn-confirm" onclick="confirmSell()">ПРОДАТИ</button>`);
+    }
+    function confirmSell() {
+        sendToBot({ action: "sell_dinero", amount: document.getElementById('sell-amount').value, card: document.getElementById('sell-card').value });
+    }
+
+    function startTransferDine() {
+        openModal(`<p>Сума переказу:</p><input type="number" id="t-amount"><p>ID отримувача:</p><input type="number" id="t-id"><button class="btn btn-confirm" onclick="confirmTrans()">ПЕРЕДАТИ</button>`);
+    }
+    function confirmTrans() {
+        sendToBot({ action: "transfer", amount: document.getElementById('t-amount').value, target_id: document.getElementById('t-id').value });
+    }
+
+    // --- ЛАВКА БУТЛЕГЕРА ---
     const items = [
         ["Змінити префікс гравцеві", 20], ["Змінити префікс Адміну", 40], ["Зняти варн", 70],
         ["Зняти бан", 250], ["Дати мут адміністратору (30 хв)", 200], ["Захист від таргета", 30],
@@ -220,17 +217,18 @@ function handleConfirmPurchase() {
     ];
     
     const shop = document.getElementById('shop-container');
-    items.forEach(i => {
+    items.forEach((i, idx) => {
         const d = document.createElement('div');
         d.className = 'menu-item full';
         d.style.marginBottom = '10px';
         d.innerHTML = `<div>${i[0]} — ${i[1]} ₲</div>`;
-        d.onclick = () => checkBalanceAndConfirm(i[1], `🎩 Придбати ${i[0]} за ${i[1]} дінеро?`, i[0]);
+        d.onclick = () => sendToBot({ action: "other_service", name: i[0], price: i[1], id: idx });
         shop.appendChild(d);
     });
 </script>
 </body>
 </html>
+
 
 
 
