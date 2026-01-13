@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MAFIA GUERRERA CABINET</title>
-    <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@700&family=Special+Elite&family=Cinzel:wght@700&display=swap" rel="stylesheet">
     <style>
         :root { --gold: #c5a059; --dark: #0a0a0a; --btn-bg: rgba(20, 20, 20, 0.95); }
         body {
@@ -25,10 +25,16 @@
         .balance-val { font-size: 32px; color: #fff; margin: 5px 0; font-weight: bold; }
         
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        /* Оновлено шрифт для блоків меню */
         .menu-item {
             background: var(--btn-bg); border: 1px solid #333; padding: 15px 10px;
             text-align: center; cursor: pointer; display: flex; flex-direction: column;
             justify-content: center; min-height: 80px; transition: 0.3s;
+            font-family: 'Cinzel', serif; /* Новий шрифт */
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .menu-item:active { transform: scale(0.95); border-color: var(--gold); }
         .menu-item.full { grid-column: span 2; min-height: 60px; }
@@ -41,6 +47,14 @@
         .modal-content {
             background: #111; border: 1px solid var(--gold); padding: 25px;
             width: 85%; text-align: center; position: relative;
+        }
+        
+        /* Оновлено шрифт для назв покупок у модальних вікнах */
+        .modal-content h3 {
+            font-family: 'Cinzel', serif;
+            text-transform: uppercase;
+            color: var(--gold);
+            letter-spacing: 1.5px;
         }
         
         input {
@@ -91,7 +105,8 @@
             <div class="menu-item" onclick="showView('transfer-view')">💸 ДІНЕРО ТА ПЕРЕКАЗИ</div>
             <div class="menu-item full" onclick="showView('shop-view')">🎩 ЛАВКА БУТЛЕГЕРА</div>
         </div>
-<div id="prefix-view" class="hidden">
+
+        <div id="prefix-view" class="hidden">
             <button class="btn" onclick="showView('main-menu')">← НАЗАД</button>
             <div class="menu-grid" style="margin-top:20px">
                 <div class="menu-item" onclick="startPrefixSelf()">ПРЕФІКС ДЛЯ СЕБЕ (15 ₲/дн)</div>
@@ -124,25 +139,20 @@
     tg.expand();
     tg.enableClosingConfirmation();
 
-    // Отримання даних з URL (баланс, id, ім'я)
     const urlParams = new URLSearchParams(window.location.search);
     let userBalance = parseFloat(urlParams.get('bal')) || 0;
     const userId = urlParams.get('id');
     const userNameParam = urlParams.get('name');
 
-    // Налаштування інтерфейсу
     document.getElementById('balance-val').innerText = userBalance.toLocaleString() + " ₲";
-    // Пріоритет: ім'я з Telegram, якщо немає — з бази даних
     document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || userNameParam || "Користувач";
 
-    // --- ЗВУКОВІ ЕФЕКТИ ---
     function playClick() {
         const clickSound = document.getElementById('clickSound');
         clickSound.currentTime = 0;
         clickSound.play().catch(() => {});
     }
 
-    // Універсальна функція показу екранів
     function showView(id) {
         playClick();
         document.querySelectorAll('#app > div:not(.balance-card):not(header)').forEach(v => v.classList.add('hidden'));
@@ -160,21 +170,16 @@
         document.getElementById('modal').style.display = 'none';
     }
 
-    // ФІНАЛЬНИЙ ЕТАП: Успіх + 4 секунди звуку + Відправка
     function finishAction(actionData) {
         const sound = document.getElementById('successSound');
         sound.play().catch(() => {});
-
         document.getElementById('success-overlay').style.display = 'flex';
-        
-        // Чекаємо 4 секунди, щоб звук success.mp3 пролунав повністю
         setTimeout(() => {
             tg.sendData(JSON.stringify(actionData));
             tg.close();
         }, 4000);
     }
 
-    // --- ПРЕФІКСИ ТА АДМІНКА ---
     function startPrefixSelf() {
         openModal(`
             <h3>ПРЕФІКС ДЛЯ СЕБЕ</h3>
@@ -206,10 +211,8 @@
         const target = document.getElementById('p_target')?.value || null;
         const pricePerDay = action === 'buy_prefix_self' ? 15 : 20;
         const total = days * pricePerDay;
-
         if (!text || days < 1) return alert("Заповніть всі поля!");
         if (userBalance < total) return alert("Недостатньо дінеро!");
-
         finishAction({ action, days, text, target_id: target, price: total });
     }
 
@@ -231,7 +234,6 @@
         finishAction({ action: 'buy_admin', days, price: total });
     }
 
-    // --- ПЕРЕКАЗИ ТА ВИВІД ---
     function startBuyDine() {
         openModal(`
             <h3>КУПИТИ ДІНЕРО</h3>
@@ -284,7 +286,6 @@
         finishAction({ action: 'transfer', target_id: target, amount });
     }
 
-    // --- ЛАВКА БУТЛЕГЕРА (ТОЧНИЙ ПОРЯДОК) ---
     const items = [
         ["Змінити префікс гравцеві", 20],
         ["Змінити префікс Адміну", 40],
@@ -313,6 +314,7 @@
             playClick();
             if (userBalance < i[1]) return alert("Недостатньо дінеро!");
             openModal(`
+                <h3>ПІДТВЕРДЖЕННЯ</h3>
                 <p>Придбати "${i[0]}" за ${i[1]} ₲?</p>
                 <button class="btn btn-confirm" onclick="finishAction({action:'shop_buy', item:'${i[0]}', price:${i[1]}})">ПІДТВЕРДИТИ</button>
                 <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
@@ -323,6 +325,7 @@
 </script>
 </body>
 </html>
+
 
 
 
