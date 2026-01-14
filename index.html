@@ -143,27 +143,26 @@
     const userNameParam = urlParams.get('name');
 
     document.getElementById('balance-val').innerText = userBalance.toLocaleString() + " ₲";
-    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || userNameParam || "Користувач";
+    
+    // Додано decodeURIComponent для коректного відображення імен з пробілами та емодзі
+    document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || decodeURIComponent(userNameParam || "") || "Користувач";
 
     // --- ЛОГІКА АУДІО ---
     let musicStarted = false;
     const bgMusic = document.getElementById('bgMusic');
-    bgMusic.volume = 0.15; // Тиха фонова музика
+    bgMusic.volume = 0.15; 
 
     function playClick() {
-        // Звук кліку
         const clickSound = document.getElementById('clickSound');
         clickSound.currentTime = 0;
         clickSound.play().catch(() => {});
 
-        // Запуск фонової музики при першому кліку (обмеження браузерів)
         if (!musicStarted) {
             bgMusic.play().catch(e => console.log("Music blocked:", e));
             musicStarted = true;
         }
     }
 
-    // Автоматична пауза при згортанні Mini App
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
             bgMusic.pause();
@@ -192,21 +191,28 @@
         document.getElementById('modal').style.display = 'none';
     }
 
+    // Оновлена функція завершення дії з обробкою помилок та швидшою відправкою
     function finishAction(actionData) {
         const sound = document.getElementById('successSound');
         sound.play().catch(() => {});
         
-        // Переконуємось, що фонова музика грає
         if (!musicStarted) {
             bgMusic.play().catch(() => {});
             musicStarted = true;
         }
 
         document.getElementById('success-overlay').style.display = 'flex';
+        
+        // Затримку зменшено до 1.5 сек для кращої роботи на мобільних пристроях
         setTimeout(() => {
-            tg.sendData(JSON.stringify(actionData));
+            try {
+                tg.sendData(JSON.stringify(actionData));
+            } catch (e) {
+                // Виводимо помилку прямо в Mini App, якщо sendData не спрацював
+                alert("Помилка відправки даних боту: " + e.message);
+            }
             tg.close();
-        }, 4000);
+        }, 1500);
     }
 
     // --- ЛОГІКА ПОКУПОК ---
@@ -356,6 +362,7 @@
 </script>
 </body>
 </html>
+
 
 
 
