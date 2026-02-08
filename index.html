@@ -424,7 +424,13 @@
 
     // Вибираємо найсвіжішу дату з усіх можливих джерел
     let lastSpinDate = null;
-    if (dateUrl && dateLocal) {
+
+    if (urlSpin === 'never' || urlSpin === 'None' || urlSpin === 'null' || !urlSpin) {
+        // Якщо в посиланні (базі) порожньо — обнуляємо все і видаляємо з пам'яті телефону
+        lastSpinDate = null;
+        localStorage.removeItem('mafia_last_spin');
+    } else if (dateUrl && dateLocal) {
+        // Якщо є обидві дати, беремо ту, що була пізніше
         lastSpinDate = dateUrl > dateLocal ? dateUrl : dateLocal;
     } else {
         lastSpinDate = dateUrl || dateLocal;
@@ -520,6 +526,7 @@
 </script>
 </body>
 </html>
+
 
 
 
