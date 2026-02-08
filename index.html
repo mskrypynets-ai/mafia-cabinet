@@ -414,28 +414,38 @@
     const timerText = document.getElementById('safe-timer');
     const wheel = document.getElementById('wheel');
 
+    let timerTimeout; // Змінна для контролю таймера
+
     function updateTimer() {
-        if (!lastSpinStr || lastSpinStr === 'never') {
+        if (!lastSpinStr || lastSpinStr === 'never' || lastSpinStr === 'None') {
             timerText.innerText = "Сейф готовий до зламу!";
+            timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
             return;
         }
 
-        const lastDate = new Date(lastSpinStr.replace(' ', 'T'));
+        // Використовуємо заміну для стабільності на iOS та Android
+        const lastDate = new Date(lastSpinStr.replace(/-/g, '/'));
         const nextDate = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
         const now = new Date();
 
         if (now >= nextDate) {
             timerText.innerText = "Сейф готовий до зламу!";
+            timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
         } else {
             const diff = nextDate - now;
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
+            
             timerText.innerText = `Доступ через: ${h}г ${m}хв ${s}с`;
+            timerText.style.color = "#888"; // Сірий колір, поки чекаємо
             spinBtn.disabled = true;
-            setTimeout(updateTimer, 1000);
+
+            // Очищуємо старий таймаут перед створенням нового
+            if (timerTimeout) clearTimeout(timerTimeout);
+            timerTimeout = setTimeout(updateTimer, 1000);
         }
     }
     updateTimer();
@@ -480,6 +490,7 @@
 </script>
 </body>
 </html>
+
 
 
 
