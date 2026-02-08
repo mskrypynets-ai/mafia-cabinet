@@ -483,13 +483,27 @@
                 document.getElementById('winSound').play();
             }
 
+            setTimeout(() => {
             alert(`Ви відкрили сейф: ${result.prize_name}`);
+            
+            // 1. Відправляємо дані боту
             finishAction(result);
-        }, 3500); // 3.5 сек на анімацію
-    }
+
+            // 2. ПРИМУСОВО блокуємо кнопку в інтерфейсі
+            spinBtn.disabled = true;
+
+            // 3. Оновлюємо змінну часу локально (ставимо "зараз")
+            // Це запустить таймер у Mini App миттєво
+            lastSpinStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            
+            // 4. Перезапускаємо функцію таймера
+            updateTimer();
+
+    }, 3500); // 3.5 сек на анімацію
 </script>
 </body>
 </html>
+
 
 
 
