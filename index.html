@@ -191,9 +191,8 @@
     const userId = urlParams.get('id');
     const userNameParam = urlParams.get('name');
 
+    // Ініціалізація даних користувача
     document.getElementById('balance-val').innerText = userBalance.toLocaleString() + " ₲";
-    
-    // Додано decodeURIComponent для коректного відображення імен з пробілами та емодзі
     document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || decodeURIComponent(userNameParam || "") || "Користувач";
 
     // --- ЛОГІКА АУДІО ---
@@ -240,10 +239,14 @@
         document.getElementById('modal').style.display = 'none';
     }
 
-    // Оновлена функція завершення дії з обробкою помилок та швидшою відправкою
+    // Оновлена функція завершення дії
     function finishAction(actionData) {
-        const sound = document.getElementById('successSound');
-        sound.play().catch(() => {});
+        // Якщо це був виграш, програємо звук виграшу в блоці spinWheel, тут тільки загальний успіх
+        // Але для інших покупок можна залишити
+        if (actionData.action !== 'wheel_win') {
+             const sound = document.getElementById('successSound');
+             sound.play().catch(() => {});
+        }
         
         if (!musicStarted) {
             bgMusic.play().catch(() => {});
@@ -252,12 +255,10 @@
 
         document.getElementById('success-overlay').style.display = 'flex';
         
-        // Затримку зменшено до 1.5 сек для кращої роботи на мобільних пристроях
         setTimeout(() => {
             try {
                 tg.sendData(JSON.stringify(actionData));
             } catch (e) {
-                // Виводимо помилку прямо в Mini App, якщо sendData не спрацював
                 alert("Помилка відправки даних боту: " + e.message);
             }
             tg.close();
@@ -408,24 +409,29 @@
         };
         shop.appendChild(d);
     });
+
     // --- ЛОГІКА ЩОДЕННОГО СЕЙФА ---
-    const lastSpinStr = urlParams.get('spin');
+    // ВАЖЛИВО: let замість const, щоб можна було оновлювати дату без перезавантаження
+    let lastSpinStr = urlParams.get('spin'); 
+    
     const spinBtn = document.getElementById('spin-button');
     const timerText = document.getElementById('safe-timer');
     const wheel = document.getElementById('wheel');
 
-    let timerTimeout; // Змінна для контролю таймера
+    let timerTimeout; 
 
     function updateTimer() {
-        if (!lastSpinStr || lastSpinStr === 'never' || lastSpinStr === 'None') {
+        if (!lastSpinStr || lastSpinStr === 'never' || lastSpinStr === 'None' || lastSpinStr === 'null') {
             timerText.innerText = "Сейф готовий до зламу!";
             timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
             return;
         }
 
-        // Використовуємо заміну для стабільності на iOS та Android
-        const lastDate = new Date(lastSpinStr.replace(/-/g, '/'));
+        // Виправляємо формат дати для iOS/Android (2026-02-07 -> 2026/02/07)
+        const safeDateStr = lastSpinStr.replace(/-/g, '/');
+        const lastDate = new Date(safeDateStr);
+        // Додаємо рівно 24 години (86400000 мс)
         const nextDate = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
         const now = new Date();
 
@@ -440,71 +446,77 @@
             const s = Math.floor((diff % 60000) / 1000);
             
             timerText.innerText = `Доступ через: ${h}г ${m}хв ${s}с`;
-            timerText.style.color = "#888"; // Сірий колір, поки чекаємо
+            timerText.style.color = "#888"; 
             spinBtn.disabled = true;
 
-            // Очищуємо старий таймаут перед створенням нового
+            // Цикл таймера
             if (timerTimeout) clearTimeout(timerTimeout);
             timerTimeout = setTimeout(updateTimer, 1000);
         }
     }
+    
+    // Запускаємо таймер при старті
     updateTimer();
 
     function spinWheel() {
+        // 1. Блокуємо кнопку відразу
         spinBtn.disabled = true;
         document.getElementById('spinSound').play();
         
-        const randomDeg = Math.floor(Math.random() * 360) + 1440; // 4 повних оберти + рандом
+        // 2. Запускаємо візуальне обертання
+        const randomDeg = Math.floor(Math.random() * 360) + 1440; // 4+ обертів
         wheel.style.transform = `rotate(${randomDeg}deg)`;
 
+        // 3. Чекаємо завершення анімації (3.5 сек)
         setTimeout(() => {
             const chance = Math.random() * 100;
             let result = { action: 'wheel_win', prize_name: 'Нічого', amount: 0 };
 
-            if (chance < 50) { // 50% Порожньо
+            // Розрахунок виграшу
+            if (chance < 50) { 
                 result = { action: 'wheel_win', prize_name: 'Порожньо 💨', amount: 0 };
                 document.getElementById('loseSound').play();
-            } else if (chance < 75) { // 25% Мідь
+            } else if (chance < 75) { 
                 const val = Math.floor(Math.random() * 2) + 1;
                 result = { action: 'wheel_win', prize_name: `${val} ₲ (Мідь 🪙)`, amount: val };
                 document.getElementById('winSound').play();
-            } else if (chance < 90) { // 15% Гаманець
+            } else if (chance < 90) { 
                 const val = Math.floor(Math.random() * 11) + 5;
                 result = { action: 'wheel_win', prize_name: `${val} ₲ (Гаманець 💰)`, amount: val };
                 document.getElementById('winSound').play();
-            } else if (chance < 98) { // 8% Сейф
+            } else if (chance < 98) { 
                 const val = Math.floor(Math.random() * 16) + 20;
                 result = { action: 'wheel_win', prize_name: `${val} ₲ (СЕЙФ 🏦)`, amount: val };
                 document.getElementById('winSound').play();
-            } else { // 2% Корона
+            } else { 
                 const prizes = ['Префікс собі (3 дні)', 'Префікс другу', 'Мут учаснику (30 хв)', 'Захист від таргета'];
                 const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
                 result = { action: 'wheel_win', prize_name: `👑 ${randomPrize}`, amount: 0 };
                 document.getElementById('winSound').play();
             }
 
-            setTimeout(() => {
+            // Показуємо результат
             alert(`Ви відкрили сейф: ${result.prize_name}`);
             
-            // 1. Відправляємо дані боту
+            // Відправляємо дані боту
             finishAction(result);
 
-            // 2. ПРИМУСОВО блокуємо кнопку в інтерфейсі
-            spinBtn.disabled = true;
-
-            // 3. Оновлюємо змінну часу локально (ставимо "зараз")
-            // Це запустить таймер у Mini App миттєво
-            lastSpinStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            // Оновлюємо локальний час "останнього спіну" на поточний
+            // Це миттєво запустить таймер 24г без перезавантаження
+            const nowISO = new Date().toISOString(); // наприклад 2026-02-07T12:00:00.000Z
+            // Прибираємо T і Z, щоб було схоже на SQL формат, хоча JS зрозуміє і так
+            lastSpinStr = nowISO.replace('T', ' ').slice(0, 19);
             
-            // 4. Перезапускаємо функцію таймера
+            // Примусово запускаємо таймер
             updateTimer();
 
-    }, 3500); // 3.5 сек на анімацію
+        }, 3500); 
     }
 
 </script>
 </body>
 </html>
+
 
 
 
