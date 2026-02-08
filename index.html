@@ -407,59 +407,68 @@
         };
         shop.appendChild(d);
     });
-
-    // --- МАКСИМАЛЬНИЙ ЗАХИСТ ТАЙМЕРА (PC + Mobile) ---
+    
+    // --- ПОВНЕ ВИРІШЕННЯ ПРОБЛЕМИ КЕШУВАННЯ ---
     
     const urlSpin = urlParams.get('spin'); 
     const localSpin = localStorage.getItem('mafia_last_spin');
 
     function parseDate(str) {
         if (!str || str === 'never' || str === 'None' || str === 'null' || str === 'undefined') return null;
-        // Універсальний парсинг дати для всіх пристроїв
-        return new Date(str.replace(/-/g, '/').replace('T', ' ').split('.')[0]);
+        try {
+            return new Date(str.replace(/-/g, '/').replace('T', ' ').split('.')[0]);
+        } catch(e) { return null; }
     }
 
     const dateUrl = parseDate(urlSpin);
     const dateLocal = parseDate(localSpin);
 
-    // Вибираємо найсвіжішу дату з усіх можливих джерел
     let lastSpinDate = null;
+    const now = new Date();
 
-    if (urlSpin === 'never' || urlSpin === 'None' || urlSpin === 'null' || !urlSpin) {
-        // Якщо в посиланні (базі) порожньо — обнуляємо все і видаляємо з пам'яті телефону
+    // 1. Перевіряємо дату з URL. Якщо вона старша за 24 години — ігноруємо її (це кеш)
+    let validUrlDate = null;
+    if (dateUrl) {
+        const diffUrl = now - dateUrl;
+        if (diffUrl < 24 * 60 * 60 * 1000) { // Якщо з моменту спіну в URL пройшло МЕНШЕ 24 годин
+            validUrlDate = dateUrl;
+        }
+    }
+
+    // 2. Вибираємо найсвіжішу дату між перевіреним URL та пам'яттю телефону
+    if (validUrlDate && dateLocal) {
+        lastSpinDate = validUrlDate > dateLocal ? validUrlDate : dateLocal;
+    } else {
+        lastSpinDate = validUrlDate || dateLocal;
+    }
+
+    // 3. Якщо база каже "спінів не було" (None) - примусово очищуємо все
+    if (urlSpin === 'None' || urlSpin === 'null') {
         lastSpinDate = null;
         localStorage.removeItem('mafia_last_spin');
-    } else if (dateUrl && dateLocal) {
-        // Якщо є обидві дати, беремо ту, що була пізніше
-        lastSpinDate = dateUrl > dateLocal ? dateUrl : dateLocal;
-    } else {
-        lastSpinDate = dateUrl || dateLocal;
     }
 
     const spinBtn = document.getElementById('spin-button');
     const timerText = document.getElementById('safe-timer');
     const wheel = document.getElementById('wheel');
-    let timerTimeout; 
 
     function updateTimer() {
-        const now = new Date();
-        
         if (!lastSpinDate) {
-            timerText.innerText = "Сейф готовий до зламу!";
+            timerText.innerText = "Сейф готовий!";
             timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
             return;
         }
 
-        // Розрахунок 24 годин
         const nextDate = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
+        const currentTime = new Date();
 
-        if (now >= nextDate) {
-            timerText.innerText = "Сейф готовий до зламу!";
+        if (currentTime >= nextDate) {
+            timerText.innerText = "Сейф готовий!";
             timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
         } else {
-            const diff = nextDate - now;
+            const diff = nextDate - currentTime;
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
@@ -467,9 +476,7 @@
             timerText.innerText = `Доступ через: ${h}г ${m}хв ${s}с`;
             timerText.style.color = "#888"; 
             spinBtn.disabled = true;
-
-            if (timerTimeout) clearTimeout(timerTimeout);
-            timerTimeout = setTimeout(updateTimer, 1000);
+            setTimeout(updateTimer, 1000);
         }
     }
     
@@ -526,6 +533,7 @@
 </script>
 </body>
 </html>
+
 
 
 
