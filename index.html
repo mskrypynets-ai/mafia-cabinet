@@ -408,24 +408,21 @@
         shop.appendChild(d);
     });
 
-    // --- ОНОВЛЕНА ЛОГІКА ЩОДЕННОГО СЕЙФА (LocalStorage) ---
+    // --- МАКСИМАЛЬНИЙ ЗАХИСТ ТАЙМЕРА (PC + Mobile) ---
     
-    // 1. Отримуємо час з URL
     const urlSpin = urlParams.get('spin'); 
-    // 2. Отримуємо час, збережений у пам'яті телефону
     const localSpin = localStorage.getItem('mafia_last_spin');
 
-    // Функція для перетворення рядка в об'єкт дати
     function parseDate(str) {
-        if (!str || str === 'never' || str === 'None' || str === 'null') return null;
-        // Заміна для iOS
-        return new Date(str.replace(/-/g, '/').replace('T', ' '));
+        if (!str || str === 'never' || str === 'None' || str === 'null' || str === 'undefined') return null;
+        // Універсальний парсинг дати для всіх пристроїв
+        return new Date(str.replace(/-/g, '/').replace('T', ' ').split('.')[0]);
     }
 
     const dateUrl = parseDate(urlSpin);
     const dateLocal = parseDate(localSpin);
 
-    // 3. Вибираємо найновішу дату (або URL, або пам'ять)
+    // Вибираємо найсвіжішу дату з усіх можливих джерел
     let lastSpinDate = null;
     if (dateUrl && dateLocal) {
         lastSpinDate = dateUrl > dateLocal ? dateUrl : dateLocal;
@@ -439,6 +436,8 @@
     let timerTimeout; 
 
     function updateTimer() {
+        const now = new Date();
+        
         if (!lastSpinDate) {
             timerText.innerText = "Сейф готовий до зламу!";
             timerText.style.color = "var(--gold)";
@@ -446,16 +445,13 @@
             return;
         }
 
-        // Таймер на 24 години
+        // Розрахунок 24 годин
         const nextDate = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
-        const now = new Date();
 
         if (now >= nextDate) {
             timerText.innerText = "Сейф готовий до зламу!";
             timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
-            // Час вийшов — можна очистити стару пам'ять
-            localStorage.removeItem('mafia_last_spin');
         } else {
             const diff = nextDate - now;
             const h = Math.floor(diff / 3600000);
@@ -471,10 +467,12 @@
         }
     }
     
-    // Запускаємо перевірку при старті
     updateTimer();
 
     function spinWheel() {
+        // Подвійна перевірка перед стартом
+        if (spinBtn.disabled) return;
+        
         spinBtn.disabled = true;
         document.getElementById('spinSound').play();
         
@@ -508,22 +506,21 @@
             }
 
             alert(`Ви відкрили сейф: ${result.prize_name}`);
-            finishAction(result);
-
-            // ЗБЕРІГАЄМО час у пам'ять телефону
+            
+            // Зберігаємо час локально перед закриттям
             const now = new Date();
             localStorage.setItem('mafia_last_spin', now.toISOString());
             lastSpinDate = now;
-            
-            spinBtn.disabled = true;
-            updateTimer();
 
+            finishAction(result);
+            updateTimer();
         }, 3500); 
     }
 
 </script>
 </body>
 </html>
+
 
 
 
