@@ -239,10 +239,8 @@
         document.getElementById('modal').style.display = 'none';
     }
 
-    // Оновлена функція завершення дії
     function finishAction(actionData) {
-        // Якщо це був виграш, програємо звук виграшу в блоці spinWheel, тут тільки загальний успіх
-        // Але для інших покупок можна залишити
+        // Якщо це був виграш, програємо звук виграшу в блоці spinWheel
         if (actionData.action !== 'wheel_win') {
              const sound = document.getElementById('successSound');
              sound.play().catch(() => {});
@@ -410,35 +408,54 @@
         shop.appendChild(d);
     });
 
-    // --- ЛОГІКА ЩОДЕННОГО СЕЙФА ---
-    // ВАЖЛИВО: let замість const, щоб можна було оновлювати дату без перезавантаження
-    let lastSpinStr = urlParams.get('spin'); 
+    // --- ОНОВЛЕНА ЛОГІКА ЩОДЕННОГО СЕЙФА (LocalStorage) ---
     
+    // 1. Отримуємо час з URL
+    const urlSpin = urlParams.get('spin'); 
+    // 2. Отримуємо час, збережений у пам'яті телефону
+    const localSpin = localStorage.getItem('mafia_last_spin');
+
+    // Функція для перетворення рядка в об'єкт дати
+    function parseDate(str) {
+        if (!str || str === 'never' || str === 'None' || str === 'null') return null;
+        // Заміна для iOS
+        return new Date(str.replace(/-/g, '/').replace('T', ' '));
+    }
+
+    const dateUrl = parseDate(urlSpin);
+    const dateLocal = parseDate(localSpin);
+
+    // 3. Вибираємо найновішу дату (або URL, або пам'ять)
+    let lastSpinDate = null;
+    if (dateUrl && dateLocal) {
+        lastSpinDate = dateUrl > dateLocal ? dateUrl : dateLocal;
+    } else {
+        lastSpinDate = dateUrl || dateLocal;
+    }
+
     const spinBtn = document.getElementById('spin-button');
     const timerText = document.getElementById('safe-timer');
     const wheel = document.getElementById('wheel');
-
     let timerTimeout; 
 
     function updateTimer() {
-        if (!lastSpinStr || lastSpinStr === 'never' || lastSpinStr === 'None' || lastSpinStr === 'null') {
+        if (!lastSpinDate) {
             timerText.innerText = "Сейф готовий до зламу!";
             timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
             return;
         }
 
-        // Виправляємо формат дати для iOS/Android (2026-02-07 -> 2026/02/07)
-        const safeDateStr = lastSpinStr.replace(/-/g, '/');
-        const lastDate = new Date(safeDateStr);
-        // Додаємо рівно 24 години (86400000 мс)
-        const nextDate = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
+        // Таймер на 24 години
+        const nextDate = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
         const now = new Date();
 
         if (now >= nextDate) {
             timerText.innerText = "Сейф готовий до зламу!";
             timerText.style.color = "var(--gold)";
             spinBtn.disabled = false;
+            // Час вийшов — можна очистити стару пам'ять
+            localStorage.removeItem('mafia_last_spin');
         } else {
             const diff = nextDate - now;
             const h = Math.floor(diff / 3600000);
@@ -449,30 +466,25 @@
             timerText.style.color = "#888"; 
             spinBtn.disabled = true;
 
-            // Цикл таймера
             if (timerTimeout) clearTimeout(timerTimeout);
             timerTimeout = setTimeout(updateTimer, 1000);
         }
     }
     
-    // Запускаємо таймер при старті
+    // Запускаємо перевірку при старті
     updateTimer();
 
     function spinWheel() {
-        // 1. Блокуємо кнопку відразу
         spinBtn.disabled = true;
         document.getElementById('spinSound').play();
         
-        // 2. Запускаємо візуальне обертання
-        const randomDeg = Math.floor(Math.random() * 360) + 1440; // 4+ обертів
+        const randomDeg = Math.floor(Math.random() * 360) + 1440; 
         wheel.style.transform = `rotate(${randomDeg}deg)`;
 
-        // 3. Чекаємо завершення анімації (3.5 сек)
         setTimeout(() => {
             const chance = Math.random() * 100;
             let result = { action: 'wheel_win', prize_name: 'Нічого', amount: 0 };
 
-            // Розрахунок виграшу
             if (chance < 50) { 
                 result = { action: 'wheel_win', prize_name: 'Порожньо 💨', amount: 0 };
                 document.getElementById('loseSound').play();
@@ -495,19 +507,15 @@
                 document.getElementById('winSound').play();
             }
 
-            // Показуємо результат
             alert(`Ви відкрили сейф: ${result.prize_name}`);
-            
-            // Відправляємо дані боту
             finishAction(result);
 
-            // Оновлюємо локальний час "останнього спіну" на поточний
-            // Це миттєво запустить таймер 24г без перезавантаження
-            const nowISO = new Date().toISOString(); // наприклад 2026-02-07T12:00:00.000Z
-            // Прибираємо T і Z, щоб було схоже на SQL формат, хоча JS зрозуміє і так
-            lastSpinStr = nowISO.replace('T', ' ').slice(0, 19);
+            // ЗБЕРІГАЄМО час у пам'ять телефону
+            const now = new Date();
+            localStorage.setItem('mafia_last_spin', now.toISOString());
+            lastSpinDate = now;
             
-            // Примусово запускаємо таймер
+            spinBtn.disabled = true;
             updateTimer();
 
         }, 3500); 
@@ -516,6 +524,7 @@
 </script>
 </body>
 </html>
+
 
 
 
