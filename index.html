@@ -408,39 +408,22 @@
         shop.appendChild(d);
     });
     
-    // --- ФІКС ЧАСОВИХ ПОЯСІВ ТА СИНХРОНІЗАЦІЇ ---
+// --- ПОВНА СИНХРОНІЗАЦІЯ ЧЕРЕЗ ID (БАЗА ДАНИХ) ---
     const urlSpin = urlParams.get('spin'); 
-    const localSpin = localStorage.getItem('mafia_last_spin');
 
     function parseDate(str) {
-        if (!str || str === 'never' || str === 'None' || str === 'null') return null;
-        // Заміна для коректної роботи на iOS та PC
-        let formatted = str.replace(/-/g, '/').replace('T', ' ').split('.')[0];
+        if (!str || str === 'never' || str === 'None' || str === 'null' || str === 'undefined') return null;
+        
+        // Перетворюємо рядок з бази у формат, який зрозуміє будь-який браузер (iOS/Android/PC)
+        let formatted = str.replace(' ', 'T');
+        if (!formatted.includes('Z')) formatted += 'Z'; // Додаємо маркер UTC
+        
         let d = new Date(formatted);
-        // Якщо дата з бази (UTC), додаємо зміщення, щоб вона стала локальною
-        if (str.includes('T') || str.includes('-')) {
-             // Це змушує JS трактувати дату як UTC
-             d = new Date(formatted + " UTC");
-        }
         return isNaN(d.getTime()) ? null : d;
     }
 
-    let lastSpinDate = null;
-    const dateUrl = parseDate(urlSpin);
-    const dateLocal = parseDate(localSpin);
-
-    // Пріоритет бази: якщо в URL "None", обнуляємо все
-    if (!urlSpin || urlSpin === 'None' || urlSpin === 'null') {
-        lastSpinDate = null;
-        localStorage.removeItem('mafia_last_spin');
-    } else {
-        // Вибираємо найсвіжішу дату
-        if (dateUrl && dateLocal) {
-            lastSpinDate = (dateUrl > dateLocal) ? dateUrl : dateLocal;
-        } else {
-            lastSpinDate = dateUrl || dateLocal;
-        }
-    }
+    // ТУТ ГОЛОВНА ЗМІНА: Ми віримо ТІЛЬКИ базі даних (URL параметру)
+    let lastSpinDate = parseDate(urlSpin);
 
     const spinBtn = document.getElementById('spin-button');
     const timerText = document.getElementById('safe-timer');
@@ -510,12 +493,13 @@
 
             alert(`Ви відкрили сейф: ${result.prize_name}`);
             
-            // Зберігаємо час локально перед закриттям
-            const now = new Date();
-            localStorage.setItem('mafia_last_spin', now.toISOString());
-            lastSpinDate = now;
+            // 1. Ставимо час "зараз" для внутрішнього таймера (щоб кнопка відразу стала сірою)
+            lastSpinDate = new Date();
 
+            // 2. Відправляємо дані боту (він запише цей час у базу даних)
             finishAction(result);
+
+            // 3. Запускаємо зворотний відлік на екрані
             updateTimer();
         }, 3500); 
     }
@@ -523,6 +507,7 @@
 </script>
 </body>
 </html>
+
 
 
 
