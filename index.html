@@ -240,27 +240,26 @@
     }
 
     function finishAction(actionData) {
-        // Якщо це був виграш, програємо звук виграшу в блоці spinWheel
+        // Програємо звук, якщо це не рулетка (у рулетки свої звуки)
         if (actionData.action !== 'wheel_win') {
              const sound = document.getElementById('successSound');
              sound.play().catch(() => {});
         }
-        
-        if (!musicStarted) {
-            bgMusic.play().catch(() => {});
-            musicStarted = true;
+
+        // Надсилаємо дані боту без закриття вікна
+        try {
+            tg.sendData(JSON.stringify(actionData));
+        } catch (e) {
+            console.log("Помилка відправки:", e);
         }
 
+        // Показуємо успіх поверх екрану
         document.getElementById('success-overlay').style.display = 'flex';
         
+        // Через 2 секунди прибираємо оверлей, але залишаємо користувача в кабінеті
         setTimeout(() => {
-            try {
-                tg.sendData(JSON.stringify(actionData));
-            } catch (e) {
-                alert("Помилка відправки даних боту: " + e.message);
-            }
-            tg.close();
-        }, 1500);
+            document.getElementById('success-overlay').style.display = 'none';
+        }, 2000);
     }
 
     // --- ЛОГІКА ПОКУПОК ---
@@ -408,22 +407,28 @@
         shop.appendChild(d);
     });
     
-// --- ПОВНА СИНХРОНІЗАЦІЯ ЧЕРЕЗ ID (БАЗА ДАНИХ) ---
+// --- ГІБРИДНА СИНХРОНІЗАЦІЯ (URL + LOCALSTORAGE) ---
     const urlSpin = urlParams.get('spin'); 
+    const localSpin = localStorage.getItem('mafia_last_spin'); // Підстраховка, якщо не оновили /start
 
     function parseDate(str) {
         if (!str || str === 'never' || str === 'None' || str === 'null' || str === 'undefined') return null;
-        
-        // Перетворюємо рядок з бази у формат, який зрозуміє будь-який браузер (iOS/Android/PC)
         let formatted = str.replace(' ', 'T');
-        if (!formatted.includes('Z')) formatted += 'Z'; // Додаємо маркер UTC
-        
+        if (!formatted.includes('Z')) formatted += 'Z'; 
         let d = new Date(formatted);
         return isNaN(d.getTime()) ? null : d;
     }
 
-    // ТУТ ГОЛОВНА ЗМІНА: Ми віримо ТІЛЬКИ базі даних (URL параметру)
-    let lastSpinDate = parseDate(urlSpin);
+    const dateUrl = parseDate(urlSpin);
+    const dateLocal = parseDate(localSpin);
+
+    // Вибираємо найсвіжішу дату між базою бота та пам'яттю телефону
+    let lastSpinDate = null;
+    if (dateUrl && dateLocal) {
+        lastSpinDate = (dateUrl > dateLocal) ? dateUrl : dateLocal;
+    } else {
+        lastSpinDate = dateUrl || dateLocal;
+    }
 
     const spinBtn = document.getElementById('spin-button');
     const timerText = document.getElementById('safe-timer');
@@ -493,13 +498,17 @@
 
             alert(`Ви відкрили сейф: ${result.prize_name}`);
             
-            // 1. Ставимо час "зараз" для внутрішнього таймера (щоб кнопка відразу стала сірою)
-            lastSpinDate = new Date();
+            alert(`Ви відкрили сейф: ${result.prize_name}`);
+            
+            // 1. Зберігаємо локально, щоб кнопка стала сірою ПРЯМО ЗАРАЗ
+            const now = new Date();
+            localStorage.setItem('mafia_last_spin', now.toISOString());
+            lastSpinDate = now;
 
-            // 2. Відправляємо дані боту (він запише цей час у базу даних)
+            // 2. Відправляємо дані боту (він оновить базу)
             finishAction(result);
 
-            // 3. Запускаємо зворотний відлік на екрані
+            // 3. Оновлюємо таймер на екрані
             updateTimer();
         }, 3500); 
     }
@@ -507,6 +516,7 @@
 </script>
 </body>
 </html>
+
 
 
 
