@@ -407,9 +407,9 @@
         shop.appendChild(d);
     });
     
-// --- ГІБРИДНА СИНХРОНІЗАЦІЯ (URL + LOCALSTORAGE) ---
+// --- ГІБРИДНА СИНХРОНІЗАЦІЯ (ВИПРАВЛЕНО) ---
     const urlSpin = urlParams.get('spin'); 
-    const localSpin = localStorage.getItem('mafia_last_spin'); // Підстраховка, якщо не оновили /start
+    const localSpin = localStorage.getItem('mafia_last_spin');
 
     function parseDate(str) {
         if (!str || str === 'never' || str === 'None' || str === 'null' || str === 'undefined') return null;
@@ -422,12 +422,24 @@
     const dateUrl = parseDate(urlSpin);
     const dateLocal = parseDate(localSpin);
 
-    // Вибираємо найсвіжішу дату між базою бота та пам'яттю телефону
     let lastSpinDate = null;
-    if (dateUrl && dateLocal) {
-        lastSpinDate = (dateUrl > dateLocal) ? dateUrl : dateLocal;
-    } else {
-        lastSpinDate = dateUrl || dateLocal;
+
+    // ПРАВИЛО 1: Якщо бот каже, що спінів не було (never/None) — чистимо локальну пам'ять обов'язково
+    if (!dateUrl && (urlSpin === 'never' || urlSpin === 'None' || !urlSpin)) {
+        localStorage.removeItem('mafia_last_spin');
+        lastSpinDate = null;
+    } 
+    // ПРАВИЛО 2: Якщо в URL є дата, вона пріоритетна, але порівнюємо з локальною для точності
+    else if (dateUrl) {
+        if (dateLocal && dateLocal > dateUrl) {
+            lastSpinDate = dateLocal;
+        } else {
+            lastSpinDate = dateUrl;
+        }
+    } 
+    // ПРАВИЛО 3: Якщо в URL порожньо, але є локальний запис
+    else {
+        lastSpinDate = dateLocal;
     }
 
     const spinBtn = document.getElementById('spin-button');
@@ -437,29 +449,33 @@
         if (!lastSpinDate) {
             timerText.innerText = "Сейф готовий!";
             spinBtn.disabled = false;
+            spinBtn.style.opacity = "1";
             return;
         }
 
         const now = new Date();
-        // Додаємо рівно 24 години (86400000 мілісекунд)
         const nextDate = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
+        const diff = nextDate - now;
 
-        if (now >= nextDate) {
+        if (diff <= 0) {
             timerText.innerText = "Сейф готовий!";
             spinBtn.disabled = false;
+            spinBtn.style.opacity = "1";
         } else {
-            const diff = nextDate - now;
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            
-            timerText.innerText = `Доступ через: ${h}г ${m}хв ${s}с`;
             spinBtn.disabled = true;
-            setTimeout(updateTimer, 1000);
+            spinBtn.style.opacity = "0.5";
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            timerText.innerText = `Доступ через: ${hours}г ${minutes}хв ${seconds}с`;
+            setTimeout(updateTimer, 1000); // Перезапуск щосекунди
         }
     }
-    updateTimer();
 
+    updateTimer();
+    
     function spinWheel() {
         // Подвійна перевірка перед стартом
         if (spinBtn.disabled) return;
@@ -516,6 +532,7 @@
 </script>
 </body>
 </html>
+
 
 
 
