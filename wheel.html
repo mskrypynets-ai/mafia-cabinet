@@ -190,24 +190,25 @@
                 document.getElementById('winSound').play();
             }
 
-            // 1. Зберігаємо локально МИТТЄВО
+            // 1. Зберігаємо локально МИТТЄВО (щоб таймер увімкнувся в пам'яті)
             const now = new Date();
             localStorage.setItem('mafia_last_spin', now.toISOString());
             lastSpinDate = now;
 
-            // 2. Показуємо алерт
+            // 2. Показуємо повідомлення користувачу
             alert(`Ви відкрили сейф: ${result.prize_name}`);
 
             // 3. Відправляємо дані боту
             tg.sendData(JSON.stringify(result));
             
-            // 4. Закриваємо вікно (користувач повернеться в чат)
+            // 4. Закриваємо вікно через 1 секунду
             setTimeout(() => {
                 tg.close();
-            }, 500);
+            }, 1000);
 
-        }, 3500); 
+        }, 3500); // Закриває таймаут анімації колеса
     }
+    
 </script>
 </body>
 </html>
