@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAILY SAFE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --gold: #c5a059; --dark: #0a0a0a; }
+        body {
+            background-color: var(--dark); color: #d1d1d1; font-family: 'Special Elite', cursive; margin: 0;
+            background-image: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.95)), url('background.jpg');
+            background-size: cover; background-position: center;
+            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        h1 { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; text-align: center; }
+
+        /* Стилі для колеса */
+        .wheel-wrapper { position: relative; width: 300px; height: 300px; display: none; } /* Приховано за замовчуванням */
+        .wheel-container {
+            width: 100%; height: 100%; border: 8px solid #222; border-radius: 50%;
+            box-shadow: 0 0 30px var(--gold); position: relative;
+        }
+        #wheel {
+            width: 100%; height: 100%; border-radius: 50%;
+            transition: transform 3s cubic-bezier(0.15, 0, 0.15, 1);
+            background: conic-gradient(
+                #1a1a1a 0% 50%, #2a2a2a 50% 75%, #3a3a3a 75% 90%, #4a4a4a 90% 98%, var(--gold) 98% 100%
+            );
+        }
+        .wheel-pointer {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 15px solid transparent;
+            border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10;
+        }
+        
+        .btn-spin {
+            margin-top: 30px; background: var(--gold); color: #000; font-size: 20px;
+            font-weight: bold; padding: 15px 40px; border: none; cursor: pointer;
+            font-family: 'Cinzel', serif; letter-spacing: 2px;
+            box-shadow: 0 0 15px var(--gold);
+        }
+        .btn-spin:active { transform: scale(0.95); }
+
+        /* Стилі для великого таймера */
+        #timer-container {
+            display: none; /* Приховано за замовчуванням */
+            text-align: center; border: 2px solid var(--gold); padding: 30px;
+            background: rgba(0,0,0,0.8); box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
+        }
+        .timer-val { font-size: 40px; color: var(--gold); font-family: 'Cinzel', serif; margin: 10px 0; }
+        .timer-label { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+
+    </style>
+</head>
+<body>
+
+    <audio id="spinSound" src="spin.mp3" preload="auto"></audio>
+    <audio id="winSound" src="win.mp3" preload="auto"></audio>
+    <audio id="loseSound" src="lose.mp3" preload="auto"></audio>
+
+    <div id="game-view" style="display:none; flex-direction:column; align-items:center;">
+        <h1>Сейф Дона</h1>
+        <div class="wheel-wrapper" id="wheel-wrapper">
+            <div class="wheel-pointer"></div>
+            <div class="wheel-container"><div id="wheel"></div></div>
+        </div>
+        <button id="spin-button" class="btn-spin" onclick="spinWheel()">ВІДКРИТИ</button>
+    </div>
+
+    <div id="timer-container">
+        <div class="timer-label">Доступ до сейфа через</div>
+        <div id="timer-text" class="timer-val">00:00:00</div>
+        <div style="font-size: 12px; color: #555; margin-top: 10px;">Сейф заблоковано системою безпеки</div>
+    </div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // --- ГІБРИДНА СИНХРОНІЗАЦІЯ ---
+    const urlSpin = urlParams.get('spin'); 
+    const localSpin = localStorage.getItem('mafia_last_spin');
+
+    function parseDate(str) {
+        if (!str || str === 'never' || str === 'None' || str === 'null' || str === 'undefined') return null;
+        let formatted = str.replace(' ', 'T');
+        if (!formatted.includes('Z')) formatted += 'Z'; 
+        let d = new Date(formatted);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    const dateUrl = parseDate(urlSpin);
+    const dateLocal = parseDate(localSpin);
+    let lastSpinDate = null;
+
+    // ПРАВИЛО 1: Очистка
+    if (!dateUrl && (urlSpin === 'never' || urlSpin === 'None' || !urlSpin)) {
+        localStorage.removeItem('mafia_last_spin');
+        lastSpinDate = null;
+    } 
+    // ПРАВИЛО 2: Пріоритет URL
+    else if (dateUrl) {
+        lastSpinDate = (dateLocal && dateLocal > dateUrl) ? dateLocal : dateUrl;
+    } 
+    // ПРАВИЛО 3: Локальна пам'ять
+    else {
+        lastSpinDate = dateLocal;
+    }
+
+    const timerContainer = document.getElementById('timer-container');
+    const gameView = document.getElementById('game-view');
+    const wheelWrapper = document.getElementById('wheel-wrapper');
+    const timerText = document.getElementById('timer-text');
+    const spinBtn = document.getElementById('spin-button');
+    const wheel = document.getElementById('wheel');
+
+    function updateView() {
+        if (!lastSpinDate) {
+            // МОЖНА ГРАТИ
+            timerContainer.style.display = 'none';
+            gameView.style.display = 'flex';
+            wheelWrapper.style.display = 'block';
+            return;
+        }
+
+        const now = new Date();
+        const nextDate = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
+        const diff = nextDate - now;
+
+        if (diff <= 0) {
+            // ЧАС ВИЙШОВ -> МОЖНА ГРАТИ
+            timerContainer.style.display = 'none';
+            gameView.style.display = 'flex';
+            wheelWrapper.style.display = 'block';
+        } else {
+            // ЧЕКАЄМО -> ПОКАЗУЄМО ТІЛЬКИ ТАЙМЕР
+            gameView.style.display = 'none';
+            timerContainer.style.display = 'block';
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // Гарний формат з нулями (05:01:09)
+            const hStr = hours.toString().padStart(2, '0');
+            const mStr = minutes.toString().padStart(2, '0');
+            const sStr = seconds.toString().padStart(2, '0');
+
+            timerText.innerText = `${hStr}:${mStr}:${sStr}`;
+            setTimeout(updateView, 1000);
+        }
+    }
+
+    updateView();
+
+    function spinWheel() {
+        spinBtn.disabled = true; // Блокуємо кнопку, щоб не нажали двічі
+        spinBtn.innerText = "КРУТИМО...";
+        document.getElementById('spinSound').play();
+        
+        const randomDeg = Math.floor(Math.random() * 360) + 1440; 
+        wheel.style.transform = `rotate(${randomDeg}deg)`;
+
+        setTimeout(() => {
+            const chance = Math.random() * 100;
+            let result = { action: 'wheel_win', prize_name: 'Нічого', amount: 0 };
+
+            if (chance < 50) { 
+                result = { action: 'wheel_win', prize_name: 'Порожньо 💨', amount: 0 };
+                document.getElementById('loseSound').play();
+            } else if (chance < 75) { 
+                const val = Math.floor(Math.random() * 2) + 1;
+                result = { action: 'wheel_win', prize_name: `${val} ₲ (Мідь 🪙)`, amount: val };
+                document.getElementById('winSound').play();
+            } else if (chance < 90) { 
+                const val = Math.floor(Math.random() * 11) + 5;
+                result = { action: 'wheel_win', prize_name: `${val} ₲ (Гаманець 💰)`, amount: val };
+                document.getElementById('winSound').play();
+            } else if (chance < 98) { 
+                const val = Math.floor(Math.random() * 16) + 20;
+                result = { action: 'wheel_win', prize_name: `${val} ₲ (СЕЙФ 🏦)`, amount: val };
+                document.getElementById('winSound').play();
+            } else { 
+                const prizes = ['Префікс собі (3 дні)', 'Префікс другу', 'Мут учаснику (30 хв)', 'Захист від таргета'];
+                const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
+                result = { action: 'wheel_win', prize_name: `👑 ${randomPrize}`, amount: 0 };
+                document.getElementById('winSound').play();
+            }
+
+            // 1. Зберігаємо локально МИТТЄВО
+            const now = new Date();
+            localStorage.setItem('mafia_last_spin', now.toISOString());
+            lastSpinDate = now;
+
+            // 2. Показуємо алерт
+            alert(`Ви відкрили сейф: ${result.prize_name}`);
+
+            // 3. Відправляємо дані боту
+            tg.sendData(JSON.stringify(result));
+            
+            // 4. Закриваємо вікно (користувач повернеться в чат)
+            setTimeout(() => {
+                tg.close();
+            }, 500);
+
+        }, 3500); 
+    }
+</script>
+</body>
+</html>
