@@ -56,7 +56,6 @@
         tg.expand();
 
         const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('id');
         const lastSpinFromURL = urlParams.get('spin');
 
         let lastSpinDate = (lastSpinFromURL && lastSpinFromURL !== 'never') 
@@ -76,6 +75,7 @@
                 return;
             }
 
+            // ТАЙМЕР ПОВЕРНУТО НА 24 ГОДИНИ
             const nextSpin = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
             const diff = nextSpin - now;
 
@@ -97,44 +97,42 @@
         function spinWheel() {
             const btn = document.getElementById('spinBtn');
             btn.disabled = true;
+            
+            // Запуск звуку обертання
             document.getElementById('spinSound').play();
 
             const wheel = document.getElementById('wheel');
-            const randomDeg = Math.floor(Math.random() * 360) + 3600; // 10+ обертів
+            const randomDeg = Math.floor(Math.random() * 360) + 3600; 
             wheel.style.transform = `rotate(${randomDeg}deg)`;
 
             setTimeout(() => {
                 const chance = Math.random() * 100;
                 let result;
+                let isWinner = true;
 
-                // НОВА ЛОГІКА РОЗПОДІЛУ ШАНСІВ
                 if (chance < 40) { 
-                    // 40% - Порожньо
                     result = { action: 'wheel_win', prize_name: 'Порожньо 💨', amount: 0 };
+                    isWinner = false; 
                 } else if (chance < 80) { 
-                    // 40% - Мідь (1 або 2 ₲)
                     const val = Math.floor(Math.random() * 2) + 1;
                     result = { action: 'wheel_win', prize_name: `${val} ₲ (Мідь 🪙)`, amount: val };
-                    document.getElementById('winSound').play();
                 } else if (chance < 94) { 
-                    // 14% - Гаманець (5-15 ₲)
                     const val = Math.floor(Math.random() * 11) + 5;
                     result = { action: 'wheel_win', prize_name: `${val} ₲ (Гаманець 💰)`, amount: val };
-                    document.getElementById('winSound').play();
                 } else if (chance < 97) { 
-                    // 3% - СЕЙФ (20-35 ₲)
                     const val = Math.floor(Math.random() * 16) + 20;
                     result = { action: 'wheel_win', prize_name: `${val} ₲ (СЕЙФ 🏦)`, amount: val };
-                    document.getElementById('winSound').play();
                 } else { 
-                    // 3% - Предмети
                     const prizes = ['Префікс собі (3 дні)', 'Префікс другу', 'Мут учаснику (30 хв)', 'Захист від таргета'];
                     const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
                     result = { action: 'wheel_win', prize_name: `👑 ${randomPrize}`, amount: 0 };
+                }
+
+                // Якщо виграв — грає переможний звук
+                if (isWinner) {
                     document.getElementById('winSound').play();
                 }
 
-                // Фіксація часу та відправка боту
                 const now = new Date();
                 localStorage.setItem('mafia_last_spin', now.toISOString());
                 lastSpinDate = now;
