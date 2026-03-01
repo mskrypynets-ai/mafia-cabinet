@@ -15,7 +15,7 @@
         }
         h1 { font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; text-align: center; }
 
-        /* Стилі для колеса */
+        /* Стилі для колеса (ТВОЇ ОРИГІНАЛЬНІ) */
         .wheel-wrapper { position: relative; width: 300px; height: 300px; display: none; }
         .wheel-container {
             width: 100%; height: 100%; border: 5px solid var(--gold); border-radius: 50%;
@@ -76,7 +76,7 @@
                 return;
             }
 
-            // Таймер рівно на 24 години
+            // ТАЙМЕР НА 24 ГОДИНИ (ВИПРАВЛЕНО)
             const nextSpin = new Date(lastSpinDate.getTime() + 24 * 60 * 60 * 1000);
             const diff = nextSpin - now;
 
@@ -98,47 +98,40 @@
         function spinWheel() {
             const btn = document.getElementById('spinBtn');
             btn.disabled = true;
-
-            // Звук початку крутіння
+            
+            // Твій звук обертання
             document.getElementById('spinSound').play();
 
             const wheel = document.getElementById('wheel');
-            // Анімація крутіння (10 обертів + випадковий кут)
+            // Твоя анімація обертання
             const randomDeg = Math.floor(Math.random() * 360) + 3600; 
             wheel.style.transform = `rotate(${randomDeg}deg)`;
 
-            // Чекаємо завершення анімації (4.1 секунди)
+            // Час очікування згідно з CSS transition (4 секунди)
             setTimeout(() => {
                 const chance = Math.random() * 100;
                 let result;
-                let playWin = true;
 
-                // Нова логіка шансів
+                // ОНОВЛЕНІ ШАНСИ (40/40/14/3/3)
                 if (chance < 40) { 
-                    // 40% - Порожньо
                     result = { action: 'wheel_win', prize_name: 'Порожньо 💨', amount: 0 };
-                    playWin = false;
+                    // Для програшу звук не граємо, або можеш додати свій
                 } else if (chance < 80) { 
-                    // 40% - Мідь (1-2 ₲)
                     const val = Math.floor(Math.random() * 2) + 1;
                     result = { action: 'wheel_win', prize_name: `${val} ₲ (Мідь 🪙)`, amount: val };
+                    document.getElementById('winSound').play();
                 } else if (chance < 94) { 
-                    // 14% - Гаманець (5-15 ₲)
                     const val = Math.floor(Math.random() * 11) + 5;
                     result = { action: 'wheel_win', prize_name: `${val} ₲ (Гаманець 💰)`, amount: val };
+                    document.getElementById('winSound').play();
                 } else if (chance < 97) { 
-                    // 3% - СЕЙФ (20-35 ₲)
                     const val = Math.floor(Math.random() * 16) + 20;
                     result = { action: 'wheel_win', prize_name: `${val} ₲ (СЕЙФ 🏦)`, amount: val };
+                    document.getElementById('winSound').play();
                 } else { 
-                    // 3% - Предмети
                     const prizes = ['Префікс собі (3 дні)', 'Префікс другу', 'Мут учаснику (30 хв)', 'Захист від таргета'];
                     const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
                     result = { action: 'wheel_win', prize_name: `👑 ${randomPrize}`, amount: 0 };
-                }
-
-                // Звук виграшу, якщо не порожньо
-                if (playWin) {
                     document.getElementById('winSound').play();
                 }
 
@@ -149,7 +142,7 @@
                 alert(`Ви відкрили сейф: ${result.prize_name}`);
                 tg.sendData(JSON.stringify(result));
                 
-                setTimeout(() => tg.close(), 500);
+                setTimeout(() => tg.close() , 500);
             }, 4100);
         }
 
