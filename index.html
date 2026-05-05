@@ -235,16 +235,85 @@
         finishAction({ action: 'transfer', target_id: target, amount });
     }
 
-    const items = [["Змінити префікс гравцеві", 20],["Змінити префікс Адміну", 40],["Зняти варн", 150],["Зняти бан", 300],["Дати мут адміністратору (30 хв)", 200],["Захист від таргета", 50],["Фільтр", 50],["Проведення супергри", 70],["Образливий преф (на добу)", 400],["Зняти образливий преф", 550],["Бан (на 12 годин)", 300],["Зняти мут (на 30 хв)", 50],["Мут учаснику (30 хв)", 60],["Мут учаснику (60 хв)", 100],["Бан адміну (12 годин)", 1000]];
+    // --- СПИСОК ТОВАРІВ (додали гнучкий мут прямо в список) ---
+    const items = [
+        ["Зняти мут (від 30 хв)", "від 50"], // Цей пункт тепер особливий
+        ["Змінити префікс гравцеві", 20],
+        ["Змінити префікс Адміну", 40],
+        ["Зняти варн", 150],
+        ["Зняти бан", 300],
+        ["Дати мут адміністратору (30 хв)", 200],
+        ["Захист від таргета", 50],
+        ["Фільтр", 50],
+        ["Проведення супергри", 70],
+        ["Образливий преф (на добу)", 400],
+        ["Зняти образливий преф", 550],
+        ["Бан (на 12 годин)", 300],
+        ["Мут учаснику (30 хв)", 60],
+        ["Мут учаснику (60 хв)", 100],
+        ["Бан адміну (12 годин)", 1000]
+    ];
+
+    // --- ФУНКЦІЯ ДЛЯ ВІКНА ПІДРАХУНКУ МУТУ ---
+    function openMuteCalculator() {
+        openModal(`
+            <h3>ЗНЯТИ МУТ</h3>
+            <p style="font-size:12px; color:var(--gold)">Базові 30 хв = 50 ₲. Кожна наступна +2 ₲.</p>
+            <input type="number" id="m_mins" placeholder="Хвилини" min="30" value="30" style="width: 80%;">
+            <p id="m_price" style="color:var(--gold); font-size:18px; font-weight:bold; margin: 15px 0;">Ціна: 50 ₲</p>
+            <button class="btn btn-confirm" onclick="confirmMuteRemoval()">ПРИДБАТИ</button>
+            <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+        `);
+
+        document.getElementById('m_mins').oninput = (e) => {
+            let mins = parseInt(e.target.value) || 0;
+            let price = mins <= 30 ? 50 : 50 + (mins - 30) * 2;
+            document.getElementById('m_price').innerText = `Ціна: ${price} ₲`;
+        };
+    }
+
+    function confirmMuteRemoval() {
+        const mins = parseInt(document.getElementById('m_mins').value) || 0;
+        if (mins < 30) return alert("Мінімальний час — 30 хв!");
+        
+        let price = mins <= 30 ? 50 : 50 + (mins - 30) * 2;
+        if (userBalance < price) return alert("Недостатньо дінеро!");
+        
+        finishAction({ 
+            action: 'shop_buy', 
+            item: `Зняти мут (${mins} хв)`, 
+            price: price 
+        });
+    }
+
+    // --- ГЕНЕРАЦІЯ СПИСКУ В ЛАВЦІ ---
     const shop = document.getElementById('shop-container');
+    shop.innerHTML = ''; // Очищуємо контейнер перед рендером
+
     items.forEach(i => {
         const d = document.createElement('div');
-        d.className = 'menu-item full'; d.style.marginBottom = '10px';
-        d.innerHTML = `<div>${i[0]}</div><div style="color:var(--gold)">${i[1]} ₲</div>`;
+        d.className = 'menu-item full';
+        d.style.marginBottom = '10px';
+        
+        // Відображення ціни: якщо це мут — пишемо "від 50", для інших — просто ціну
+        const priceTag = i[0] === "Зняти мут (від 30 хв)" ? `${i[1]} ₲` : `${i[1]} ₲`;
+        d.innerHTML = `<div>${i[0]}</div><div style="color:var(--gold)">${priceTag}</div>`;
+        
         d.onclick = () => {
             playClick();
-            if (userBalance < i[1]) return alert("Недостатньо дінеро!");
-            openModal(`<h3>ПІДТВЕРДЖЕННЯ</h3><p>Придбати "${i[0]}" за ${i[1]} ₲?</p><button class="btn btn-confirm" onclick="finishAction({action:'shop_buy', item:'${i[0]}', price:${i[1]}})">ПІДТВЕРДИТИ</button><button class="btn" onclick="closeModal()">СКАСУВАТИ</button>`);
+            // ПЕРЕВІРКА: якщо натиснули на "Зняти мут", відкриваємо калькулятор
+            if (i[0] === "Зняти мут (від 30 хв)") {
+                openMuteCalculator();
+            } else {
+                // Для всіх інших товарів — стандартне підтвердження
+                if (userBalance < i[1]) return alert("Недостатньо дінеро!");
+                openModal(`
+                    <h3>ПІДТВЕРДЖЕННЯ</h3>
+                    <p>Придбати "${i[0]}" за ${i[1]} ₲?</p>
+                    <button class="btn btn-confirm" onclick="finishAction({action:'shop_buy', item:'${i[0]}', price:${i[1]}})">ПІДТВЕРДИТИ</button>
+                    <button class="btn" onclick="closeModal()">СКАСУВАТИ</button>
+                `);
+            }
         };
         shop.appendChild(d);
     });
