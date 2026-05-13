@@ -168,20 +168,20 @@
             const chance = Math.random() * 100;
             let result = { action: 'wheel_win', prize_name: 'Нічого', amount: 0 };
 
-            if (chance < 50) { 
+            if (chance < 65) { 
                 result = { action: 'wheel_win', prize_name: 'Порожньо 💨', amount: 0 };
                 document.getElementById('loseSound').play();
-            } else if (chance < 75) { 
+            } else if (chance < 83) { 
                 const val = Math.floor(Math.random() * 2) + 1;
                 result = { action: 'wheel_win', prize_name: `${val} ₲ (Мідь 🪙)`, amount: val };
                 document.getElementById('winSound').play();
-            } else if (chance < 90) { 
+            } else if (chance < 93) { 
                 const val = Math.floor(Math.random() * 11) + 5;
                 result = { action: 'wheel_win', prize_name: `${val} ₲ (Гаманець 💰)`, amount: val };
                 document.getElementById('winSound').play();
             } else if (chance < 98) { 
                 const val = Math.floor(Math.random() * 16) + 20;
-                result = { action: 'wheel_win', prize_name: `${val} ₲ (СЕЙФ 🏦)`, amount: val };
+                result = { action: 'wheel_win', prize_name: `${val} ₲ (Сейф 🏦)`, amount: val };
                 document.getElementById('winSound').play();
             } else { 
                 const prizes = ['Префікс собі (3 дні)', 'Префікс другу', 'Мут учаснику (30 хв)', 'Захист від таргета'];
