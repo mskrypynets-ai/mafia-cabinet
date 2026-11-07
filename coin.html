@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>Монетка — Mafia Guerrera</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#d7b46a;--gold2:#f4d995;--silver:#c9d0d8;--bg:#080909;--panel:#111211;--muted:#9b9588;--line:rgba(215,180,106,.25);--green:#8fbd8a;--red:#d47a72}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% 0%,#282116 0%,#11110f 35%,#070808 78%);color:#eee9dd}
+body{font-family:'IM Fell English',Georgia,serif;padding:22px 14px 34px}
+button,input{font:inherit}
+.wrap{width:100%;max-width:440px;margin:0 auto}
+.top{text-align:center;margin:7px 0 22px}
+.brand{font:600 12px 'Cinzel',serif;letter-spacing:4px;color:var(--gold);text-transform:uppercase}
+h1{font:600 clamp(27px,8vw,36px) 'Cinzel',serif;letter-spacing:2px;margin:8px 0 4px;color:#f3e6c7;text-shadow:0 2px 18px #b17d2d55}
+.subtitle{font-size:15px;color:#a9a08f;font-style:italic}
+.panel{background:linear-gradient(145deg,rgba(28,27,23,.96),rgba(12,13,13,.98));border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 16px 45px #0009,inset 0 1px #ffffff0b}
+.balance{display:flex;align-items:center;justify-content:space-between;color:#b8b0a0;font-size:15px}
+.balance strong{font:600 18px 'Cinzel',serif;color:var(--gold2);letter-spacing:.5px}
+.stage{height:255px;display:grid;place-items:center;position:relative;perspective:1000px;margin:5px 0 7px;overflow:hidden}
+.stage:after{content:"";position:absolute;bottom:26px;width:180px;height:23px;border-radius:50%;background:#000;filter:blur(13px);opacity:.8}
+.coin{width:174px;height:174px;position:relative;transform-style:preserve-3d;filter:drop-shadow(0 18px 14px #000b);z-index:1}
+.face{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;display:grid;place-items:center;overflow:hidden;border:7px solid #9d722d;background:radial-gradient(circle at 32% 25%,#fff1b5 0%,#e5bd65 17%,#9c6b24 58%,#553512 100%);box-shadow:inset 0 0 0 2px #f8dc91,inset 0 0 0 7px #8b5e20,inset 0 0 22px #4c2b0b,0 0 0 2px #3d2a13}
+.face:before{content:"";position:absolute;inset:12px;border-radius:50%;border:1px solid #fff0b5aa;box-shadow:inset 0 0 0 1px #5d3c1766}
+.face:after{content:"";position:absolute;inset:0;background:linear-gradient(125deg,#fff8 0%,transparent 28%,transparent 65%,#0005 100%);pointer-events:none}
+.back{transform:rotateY(180deg);border-color:#737b83;background:radial-gradient(circle at 30% 23%,#fff 0%,#dce1e5 18%,#929ca5 57%,#3f4850 100%);box-shadow:inset 0 0 0 2px #f3f5f7,inset 0 0 0 7px #65717b,inset 0 0 22px #26313a,0 0 0 2px #252c32}
+.back:before{border-color:#fff9}
+.emblem{width:92px;height:92px;z-index:1;filter:drop-shadow(0 3px 2px #3c260b99)}
+.back .emblem{filter:drop-shadow(0 3px 2px #2229)}
+.coin.spinning{animation:coinSpin 2.45s cubic-bezier(.12,.72,.14,1) both}
+@keyframes coinSpin{0%{transform:rotateY(0) rotateX(0) translateY(0)}22%{transform:rotateY(720deg) rotateX(18deg) translateY(-30px)}58%{transform:rotateY(1620deg) rotateX(-10deg) translateY(-12px)}82%{transform:rotateY(2160deg) rotateX(4deg) translateY(-3px)}100%{transform:rotateY(var(--end-rotation,2520deg)) rotateX(0) translateY(0)}}
+.stage-caption{position:absolute;bottom:4px;z-index:2;color:#9c927e;font-size:14px;font-style:italic}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 17px}
+.side{border:1px solid #5c4828;background:#171611;color:#cbb47e;border-radius:12px;padding:12px 8px;cursor:pointer;transition:.18s}
+.side strong{display:block;font:600 13px 'Cinzel',serif;letter-spacing:1px}
+.side small{display:block;color:#958b77;margin-top:3px;font-size:12px}
+.side.silver{border-color:#59636b;color:#d7dce0;background:#15191c}
+.side.active{background:linear-gradient(145deg,#47351a,#21190e);border-color:var(--gold2);box-shadow:0 0 0 1px #d7b46a55,0 0 20px #c28d3530}
+.side.silver.active{background:linear-gradient(145deg,#39434b,#171c20);border-color:#dce4eb;box-shadow:0 0 0 1px #dce4eb55,0 0 20px #aebdca25}
+.label{display:block;font:500 11px 'Cinzel',serif;letter-spacing:1.5px;color:#b9ad95;margin:0 0 8px;text-transform:uppercase}
+.bet-row{display:flex;gap:10px;align-items:center}
+input[type=number]{width:100%;min-width:0;background:#090a09;border:1px solid #54452c;border-radius:10px;padding:13px 14px;color:#f5e7c9;font:600 18px 'Cinzel',serif;outline:none}
+input:focus{border-color:var(--gold)}
+.presets{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0 17px}
+.preset{padding:8px 2px;border-radius:8px;border:1px solid #3b3528;background:#151512;color:#c4b99f;font-size:13px;cursor:pointer}
+.preset:active,.preset.selected{border-color:var(--gold);color:var(--gold2);background:#2b2113}
+.flip{width:100%;border:1px solid #f0d18a;border-radius:11px;padding:15px;background:linear-gradient(110deg,#8a5c1e,#d4ad5d 48%,#8b6024);color:#171108;font:700 14px 'Cinzel',serif;letter-spacing:1.5px;cursor:pointer;box-shadow:0 5px 18px #0008,inset 0 1px #fff8;transition:.15s}
+.flip:disabled{opacity:.5;cursor:wait;filter:grayscale(.35)}
+.note{text-align:center;color:#8f887a;font-size:13px;line-height:1.5;margin:13px 4px 0}
+.result{display:none;text-align:center;margin-top:15px;padding:13px 10px;border-radius:11px;background:#090a09;border:1px solid #51432a}
+.result.show{display:block;animation:fade .3s ease}
+.result .headline{font:600 17px 'Cinzel',serif;color:var(--gold2)}
+.result .details{color:#b9b09f;margin-top:5px;font-size:15px}
+.result.win{border-color:#7b9a62}.result.loss{border-color:#89524c}
+.result.win .headline{color:var(--green)}.result.loss .headline{color:#df8d83}
+.bottom{display:flex;justify-content:space-between;align-items:center;margin:15px 3px 0;color:#827b6d;font-size:12px}
+.mute{border:1px solid #4a4131;background:#11110f;color:#bcae91;border-radius:20px;padding:7px 11px;cursor:pointer;font-size:12px}
+.status{min-height:20px;text-align:center;color:#c5a96c;font-size:13px;margin-top:9px}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:360px){.panel{padding:14px}.stage{height:225px}.coin{width:154px;height:154px}.emblem{width:82px;height:82px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Mafia Guerrera</div>
+    <h1>Монетка</h1>
+    <div class="subtitle">Один кидок. Одна доля.</div>
+  </header>
+
+  <main class="panel">
+    <div class="balance"><span>Ваш баланс</span><strong id="balance">— ₲</strong></div>
+
+    <div class="stage">
+      <div class="coin" id="coin" style="--end-rotation:2520deg">
+        <div class="face front" aria-label="Золота сторона">
+          <svg class="emblem" viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 8 58 18 72 15 75 29 88 37 81 50 88 63 75 71 72 85 58 82 50 92 42 82 28 85 25 71 12 63 19 50 12 37 25 29 28 15 42 18Z" fill="#6b4515" stroke="#f7d98e" stroke-width="2"/>
+            <path d="M50 24 56 35 69 37 60 47 62 61 50 55 38 61 40 47 31 37 44 35Z" fill="#f4d995" stroke="#704918" stroke-width="2"/>
+            <path d="M50 41c-8 0-13 6-13 13 0 8 6 13 13 13s13-5 13-13c0-7-5-13-13-13Z" fill="#6b4515"/>
+            <path d="M50 47 55 55 50 63 45 55Z" fill="#f5d88e"/>
+            <path d="M35 72h30M40 77h20" stroke="#f7d98e" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="face back" aria-label="Срібна сторона">
+          <svg class="emblem" viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 8 58 18 72 15 75 29 88 37 81 50 88 63 75 71 72 85 58 82 50 92 42 82 28 85 25 71 12 63 19 50 12 37 25 29 28 15 42 18Z" fill="#45515b" stroke="#f0f3f5" stroke-width="2"/>
+            <path d="M50 29 42 36 35 47 37 64 44 73 56 73 63 64 65 47 58 36Z" fill="#dce2e6" stroke="#38434c" stroke-width="2"/>
+            <path d="M40 46 47 43 50 49 53 43 60 46 58 55 53 58 50 55 47 58 42 55Z" fill="#45515b"/>
+            <path d="M43 65 50 60 57 65 55 71 45 71Z" fill="#45515b"/>
+            <path d="M32 34 42 39M68 34 58 39M35 77h30" stroke="#f5f7f8" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stage-caption" id="stageCaption">Оберіть свою сторону</div>
+    </div>
+
+    <div class="sides">
+      <button class="side active" id="goldBtn" type="button" aria-pressed="true">
+        <strong>♛ ЗОЛОТО</strong><small>Корона долі</small>
+      </button>
+      <button class="side silver" id="silverBtn" type="button" aria-pressed="false">
+        <strong>☠ СРІБЛО</strong><small>Холодний розрахунок</small>
+      </button>
+    </div>
+
+    <label class="label" for="stake">Ставка · від 1 до 100 ₲</label>
+    <div class="bet-row"><input id="stake" type="number" inputmode="numeric" min="1" max="100" step="1" value="10"></div>
+    <div class="presets">
+      <button class="preset" data-value="1">1</button>
+      <button class="preset selected" data-value="10">10</button>
+      <button class="preset" data-value="25">25</button>
+      <button class="preset" data-value="50">50</button>
+      <button class="preset" data-value="100">100</button>
+    </div>
+    <button class="flip" id="flipBtn" type="button">ПІДКИНУТИ МОНЕТКУ</button>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="result" id="result" aria-live="polite">
+      <div class="headline" id="resultTitle"></div>
+      <div class="details" id="resultDetails"></div>
+    </div>
+    <p class="note">Влучиш у сторону — отримаєш виплату ×1,8 разом зі ставкою. Не вгадаєш — ставка згорає. Шанс 50/50.</p>
+  </main>
+  <div class="bottom">
+    <span>MAFIA GUERRERA · DINERO</span>
+    <button class="mute" id="muteBtn" type="button">♫ Звук: увімкнено</button>
+  </div>
+</div>
+
+<audio id="spinSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_spin.mp3"></audio>
+<audio id="fallSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_fall.mp3"></audio>
+<audio id="winSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_win.mp3"></audio>
+<audio id="landSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_land.mp3"></audio>
+
+<script>
+(() => {
+  'use strict';
+  const API = 'https://guerrera.duckdns.org:8888';
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (_) {} }
+
+  const $ = id => document.getElementById(id);
+  const coin = $('coin'), balanceEl = $('balance'), statusEl = $('status');
+  const flipBtn = $('flipBtn'), stakeEl = $('stake'), resultEl = $('result');
+  const sounds = ['spinSound','fallSound','winSound','landSound'].map($);
+  let selectedSide = 'gold', busy = false, muted = false, currentBalance = null;
+  try { muted = localStorage.getItem('mg_coin_muted') === '1'; } catch (_) {}
+
+  function money(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toLocaleString('uk-UA', {maximumFractionDigits:2}) : '—';
+  }
+  function setBalance(value) {
+    currentBalance = Number(value);
+    balanceEl.textContent = money(currentBalance) + ' ₲';
+  }
+  function say(message) { statusEl.textContent = message || ''; }
+  function sound(id, volume=1) {
+    if (muted) return;
+    const a = $(id);
+    try { a.pause(); a.currentTime = 0; a.volume = volume; const p = a.play(); if (p && p.catch) p.catch(()=>{}); } catch (_) {}
+  }
+  function stopSounds() {
+    sounds.forEach(a => { try { a.pause(); a.currentTime = 0; } catch (_) {} });
+  }
+  function setSide(side) {
+    selectedSide = side;
+    $('goldBtn').classList.toggle('active', side === 'gold');
+    $('silverBtn').classList.toggle('active', side === 'silver');
+    $('goldBtn').setAttribute('aria-pressed', String(side === 'gold'));
+    $('silverBtn').setAttribute('aria-pressed', String(side === 'silver'));
+    $('stageCaption').textContent = side === 'gold' ? 'Ваша ставка — золото' : 'Ваша ставка — срібло';
+  }
+  $('goldBtn').addEventListener('click', () => !busy && setSide('gold'));
+  $('silverBtn').addEventListener('click', () => !busy && setSide('silver'));
+  document.querySelectorAll('.preset').forEach(btn => btn.addEventListener('click', () => {
+    if (busy) return;
+    stakeEl.value = btn.dataset.value;
+    document.querySelectorAll('.preset').forEach(x => x.classList.toggle('selected', x === btn));
+  }));
+  stakeEl.addEventListener('input', () => document.querySelectorAll('.preset').forEach(x => x.classList.toggle('selected', Number(x.dataset.value) === Number(stakeEl.value))));
+
+  function requestId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('');
+  }
+  async function loadBalance() {
+    const userId = tg?.initDataUnsafe?.user?.id;
+    if (!userId) { balanceEl.textContent = 'У Telegram'; return; }
+    try {
+      const r = await fetch(`${API}/cabinet-data?user_id=${encodeURIComponent(userId)}`, {method:'GET',cache:'no-store'});
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.error || 'Помилка балансу');
+      setBalance(d.bal);
+    } catch (_) {
+      balanceEl.textContent = 'Недоступно';
+    }
+  }
+  function showResult(data) {
+    const sideName = data.result === 'gold' ? 'ЗОЛОТО' : 'СРІБЛО';
+    resultEl.className = 'result show ' + (data.won ? 'win' : 'loss');
+    $('resultTitle').textContent = data.won ? 'ВИ ПЕРЕМОГЛИ' : 'ЦЬОГО РАЗУ НЕ ВДАЛОСЯ';
+    $('resultDetails').textContent = `Випало: ${sideName} · Ставка: ${data.stake} ₲ · ${data.won ? 'Виплата: ' + data.payout + ' ₲' : 'Втрачено: ' + data.stake + ' ₲'} · Баланс: ${money(data.balance)} ₲`;
+  }
+  async function toss() {
+    if (busy) return;
+    const stake = Number(stakeEl.value);
+    if (!Number.isInteger(stake) || stake < 1 || stake > 100) {
+      say('Вкажіть цілу ставку від 1 до 100 ₲.'); stakeEl.focus(); return;
+    }
+    if (!tg || !tg.initData || !tg.initDataUnsafe?.user?.id) {
+      say('Відкрийте Монетку через кнопку в Telegram-боті.'); return;
+    }
+    busy = true; flipBtn.disabled = true; flipBtn.textContent = 'МОНЕТКА У ПОВІТРІ…';
+    resultEl.className = 'result'; say('Підкидаємо монетку…');
+    stopSounds(); sound('spinSound', .8);
+    coin.classList.remove('spinning');
+    coin.style.transform = 'rotateY(0deg)';
+    // Restart animation after resetting the previous transform.
+    void coin.offsetWidth;
+    let animationStarted = false;
+    try {
+      const response = await fetch(`${API}/coin-flip`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({initData:tg.initData, request_id:requestId(), chosen_side:selectedSide, stake})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        stopSounds();
+        if (data.error === 'insufficient_funds') say('Недостатньо dineros для цієї ставки.');
+        else if (data.error === 'unauthorized') say('Сесія Telegram застаріла. Закрийте й відкрийте Монетку знову.');
+        else if (data.error === 'banned') say('Ваш акаунт не може грати в Монетку.');
+        else say(data.error || 'Не вдалося виконати кидок. Спробуйте ще раз.');
+        if (typeof data.balance === 'number') setBalance(data.balance);
+        else await loadBalance();
+        return;
+      }
+      const finalRotation = data.result === 'gold' ? 2520 : 2700;
+      coin.style.setProperty('--end-rotation', finalRotation + 'deg');
+      coin.classList.add('spinning');
+      animationStarted = true;
+      setTimeout(() => sound('fallSound', .65), 1550);
+      await new Promise(resolve => coin.addEventListener('animationend', resolve, {once:true}));
+      stopSounds();
+      sound('landSound', .9);
+      if (data.won) setTimeout(() => sound('winSound', .9), 180);
+      coin.style.transform = `rotateY(${finalRotation}deg)`;
+      setBalance(data.balance);
+      showResult(data);
+      $('stageCaption').textContent = data.result === 'gold' ? 'Випало золото' : 'Випало срібло';
+      say(data.won ? 'Доля сьогодні на вашому боці.' : 'Спробуйте удачу наступного разу.');
+    } catch (err) {
+      stopSounds();
+      say('Помилка з’єднання із сервером. Баланс не змінюйте вручну — перевірте його та спробуйте ще раз.');
+      await loadBalance();
+    } finally {
+      busy = false; flipBtn.disabled = false; flipBtn.textContent = 'ПІДКИНУТИ МОНЕТКУ';
+    }
+  }
+  flipBtn.addEventListener('click', toss);
+  $('muteBtn').addEventListener('click', () => {
+    muted = !muted;
+    $('muteBtn').textContent = muted ? '♫ Звук: вимкнено' : '♫ Звук: увімкнено';
+    try { localStorage.setItem('mg_coin_muted', muted ? '1' : '0'); } catch (_) {}
+    if (muted) stopSounds();
+  });
+  $('muteBtn').textContent = muted ? '♫ Звук: вимкнено' : '♫ Звук: увімкнено';
+  loadBalance();
+})();
+</script>
+</body>
+</html>
