@@ -399,9 +399,3 @@ input:focus{border-color:var(--gold)}
 </script>
 </body>
 </html>
-'''
-
-path = Path("/mnt/data/coin.html")
-path.write_text(html, encoding="utf-8")
-print(f"Готово: {path.name}")
-print(f"Розмір файлу: {path.stat().st_size:,} байт")
