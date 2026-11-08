@@ -1,4 +1,6 @@
-<!doctype html>
+from pathlib import Path
+
+html = r'''<!doctype html>
 <html lang="uk">
 <head>
 <meta charset="utf-8">
@@ -75,10 +77,8 @@ input:focus{border-color:var(--gold)}
     <h1>Монетка</h1>
     <div class="subtitle">Один кидок. Одна доля.</div>
   </header>
-
   <main class="panel">
     <div class="balance"><span>Ваш баланс</span><strong id="balance">— ₲</strong></div>
-
     <div class="stage">
       <div class="coin" id="coin" style="--end-rotation:2520deg">
         <div class="face front" aria-label="Золота сторона">
@@ -104,16 +104,10 @@ input:focus{border-color:var(--gold)}
       </div>
       <div class="stage-caption" id="stageCaption">Оберіть свою сторону</div>
     </div>
-
     <div class="sides">
-      <button class="side active" id="goldBtn" type="button" aria-pressed="true">
-        <strong>♛ ЗОЛОТО</strong><small>Корона долі</small>
-      </button>
-      <button class="side silver" id="silverBtn" type="button" aria-pressed="false">
-        <strong>☠ СРІБЛО</strong><small>Холодний розрахунок</small>
-      </button>
+      <button class="side active" id="goldBtn" type="button" aria-pressed="true"><strong>♛ ЗОЛОТО</strong><small>Корона долі</small></button>
+      <button class="side silver" id="silverBtn" type="button" aria-pressed="false"><strong>☠ СРІБЛО</strong><small>Холодний розрахунок</small></button>
     </div>
-
     <label class="label" for="stake">Ставка · від 1 до 100 ₲</label>
     <div class="bet-row"><input id="stake" type="number" inputmode="numeric" min="1" max="100" step="1" value="10"></div>
     <div class="presets">
@@ -136,7 +130,6 @@ input:focus{border-color:var(--gold)}
     <button class="mute" id="muteBtn" type="button">♫ Звук: увімкнено</button>
   </div>
 </div>
-
 <audio id="spinSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_spin.mp3"></audio>
 <audio id="fallSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_fall.mp3"></audio>
 <audio id="winSound" preload="auto" src="https://mskrypynets-ai.github.io/mafia-cabinet/coin_win.mp3"></audio>
@@ -144,192 +137,271 @@ input:focus{border-color:var(--gold)}
 
 <script>
 (() => {
-  const panel = document.createElement('div');
-  panel.id = 'coinDiagnostic';
-  panel.textContent = 'ДІАГНОСТИКА: JavaScript завантажується…';
-  panel.style.cssText = 'position:fixed;z-index:99999;left:8px;right:8px;bottom:8px;padding:10px 12px;border:1px solid #d7b46a;border-radius:10px;background:#111;color:#f4d995;font:13px Arial,sans-serif;white-space:pre-wrap;box-shadow:0 3px 18px #000b';
-  document.addEventListener('DOMContentLoaded', () => document.body.appendChild(panel));
-  window.__coinDiag = (message) => { panel.textContent = 'ДІАГНОСТИКА: ' + message; if (!panel.isConnected && document.body) document.body.appendChild(panel); };
-  window.addEventListener('error', (event) => {
-    window.__coinDiag('ПОМИЛКА JavaScript: ' + (event.message || 'невідома') + (event.filename ? '\n' + event.filename + ':' + event.lineno : ''));
-  });
-  window.addEventListener('unhandledrejection', (event) => {
-    const reason = event.reason;
-    window.__coinDiag('PROMISE ERROR: ' + (reason && reason.message ? reason.message : String(reason)));
-  });
-  document.addEventListener('click', (event) => {
-    if (event.target && (event.target.id === 'flipBtn' || event.target.closest?.('#flipBtn'))) {
-      window.__coinDiag('КЛІК ДОЙШОВ ДО СТОРІНКИ.\n' + telegramDiag());
-      setTimeout(() => {
-        const button = document.getElementById('flipBtn');
-        if (button && button.disabled) window.__coinDiag('ОБРОБНИК СПРАЦЮВАВ: кнопка заблокована.\n' + telegramDiag());
-        else window.__coinDiag('КЛІК Є.\n' + telegramDiag());
-      }, 250);
-    }
-  }, true);
-  window.__coinDiag('ДІАГНОСТИКА АКТИВНА. Очікую запуск основного скрипту…');
-})();
-</script>
-<script>
-(() => {
   'use strict';
-  if (window.__coinDiag) window.__coinDiag('ОСНОВНИЙ СКРИПТ ЗАПУСТИВСЯ.');
+
   const API = 'https://guerrera.duckdns.org:8888';
+  // Персональний токен передається кнопкою Telegram у фрагменті URL.
+  const coinToken = new URLSearchParams(window.location.hash.slice(1)).get('token') || '';
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); } catch (_) {} }
-  // Show Telegram WebApp context without exposing the signed initData itself.
-  const telegramDiag = () => {
-    const hasTelegram = !!window.Telegram;
-    const hasWebApp = !!(window.Telegram && window.Telegram.WebApp);
-    const initDataLength = tg && typeof tg.initData === 'string' ? tg.initData.length : 0;
-    const userId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
-      ? tg.initDataUnsafe.user.id : null;
-    const version = tg && tg.version ? tg.version : 'немає';
-    const platform = tg && tg.platform ? tg.platform : 'немає';
-    return `Telegram: ${hasTelegram ? 'є' : 'немає'}\nWebApp: ${hasWebApp ? 'є' : 'немає'}\ninitData: ${initDataLength} символів\nuser.id: ${userId || 'НЕМАЄ'}\nversion: ${version}\nplatform: ${platform}`;
-  };
-  if (window.__coinDiag) window.__coinDiag(telegramDiag());
 
   const $ = id => document.getElementById(id);
   const coin = $('coin'), balanceEl = $('balance'), statusEl = $('status');
   const flipBtn = $('flipBtn'), stakeEl = $('stake'), resultEl = $('result');
   const sounds = ['spinSound','fallSound','winSound','landSound'].map($);
-  let selectedSide = 'gold', busy = false, muted = false, currentBalance = null;
+
+  let selectedSide = 'gold';
+  let busy = false;
+  let muted = false;
+  let fallTimer = null;
+  let fallStopTimer = null;
+
   try { muted = localStorage.getItem('mg_coin_muted') === '1'; } catch (_) {}
 
   function money(value) {
     const n = Number(value);
     return Number.isFinite(n) ? n.toLocaleString('uk-UA', {maximumFractionDigits:2}) : '—';
   }
+
   function setBalance(value) {
-    currentBalance = Number(value);
-    balanceEl.textContent = money(currentBalance) + ' ₲';
+    balanceEl.textContent = money(value) + ' ₲';
   }
-  function say(message) { statusEl.textContent = message || ''; }
+
+  function say(message) {
+    statusEl.textContent = message || '';
+  }
+
   function sound(id, volume=1) {
     if (muted) return;
-    const a = $(id);
-    try { a.pause(); a.currentTime = 0; a.volume = volume; const p = a.play(); if (p && p.catch) p.catch(()=>{}); } catch (_) {}
+    const audio = $(id);
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = volume;
+      const playPromise = audio.play();
+      if (playPromise && playPromise.catch) playPromise.catch(() => {});
+    } catch (_) {}
   }
+
   function stopSounds() {
-    sounds.forEach(a => { try { a.pause(); a.currentTime = 0; } catch (_) {} });
+    sounds.forEach(audio => {
+      try { audio.pause(); audio.currentTime = 0; } catch (_) {}
+    });
   }
+
+  function clearFallTimers() {
+    if (fallTimer !== null) clearTimeout(fallTimer);
+    if (fallStopTimer !== null) clearTimeout(fallStopTimer);
+    fallTimer = null;
+    fallStopTimer = null;
+  }
+
   function setSide(side) {
     selectedSide = side;
     $('goldBtn').classList.toggle('active', side === 'gold');
     $('silverBtn').classList.toggle('active', side === 'silver');
     $('goldBtn').setAttribute('aria-pressed', String(side === 'gold'));
     $('silverBtn').setAttribute('aria-pressed', String(side === 'silver'));
-    // До кидка показуємо обрану сторону монети, не змінюючи результат гри.
+
     if (!busy) {
       coin.classList.remove('spinning');
       coin.style.transform = 'rotateY(0deg)';
       coin.classList.toggle('show-silver', side === 'silver');
       coin.style.setProperty('--end-rotation', side === 'gold' ? '2520deg' : '2700deg');
     }
+
     $('stageCaption').textContent = side === 'gold' ? 'Ваша ставка — золото' : 'Ваша ставка — срібло';
   }
-  $('goldBtn').addEventListener('click', () => !busy && setSide('gold'));
-  $('silverBtn').addEventListener('click', () => !busy && setSide('silver'));
-  document.querySelectorAll('.preset').forEach(btn => btn.addEventListener('click', () => {
-    if (busy) return;
-    stakeEl.value = btn.dataset.value;
-    document.querySelectorAll('.preset').forEach(x => x.classList.toggle('selected', x === btn));
-  }));
-  stakeEl.addEventListener('input', () => document.querySelectorAll('.preset').forEach(x => x.classList.toggle('selected', Number(x.dataset.value) === Number(stakeEl.value))));
+
+  $('goldBtn').addEventListener('click', () => { if (!busy) setSide('gold'); });
+  $('silverBtn').addEventListener('click', () => { if (!busy) setSide('silver'); });
+
+  document.querySelectorAll('.preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (busy) return;
+      stakeEl.value = btn.dataset.value;
+      document.querySelectorAll('.preset').forEach(x => x.classList.toggle('selected', x === btn));
+    });
+  });
+
+  stakeEl.addEventListener('input', () => {
+    document.querySelectorAll('.preset').forEach(x => {
+      x.classList.toggle('selected', Number(x.dataset.value) === Number(stakeEl.value));
+    });
+  });
 
   function requestId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
-    return Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('');
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
   }
+
   async function loadBalance() {
-    const userId = tg?.initDataUnsafe?.user?.id;
-    if (!userId) { balanceEl.textContent = 'У Telegram'; return; }
     try {
-      const r = await fetch(`${API}/cabinet-data?user_id=${encodeURIComponent(userId)}`, {method:'GET',cache:'no-store'});
-      const d = await r.json();
-      if (!r.ok || !d.ok) throw new Error(d.error || 'Помилка балансу');
-      setBalance(d.bal);
+      let response;
+
+      if (coinToken) {
+        response = await fetch(`${API}/coin-balance`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({token: coinToken}),
+          cache: 'no-store'
+        });
+      } else {
+        // Резервний режим для тимчасового тесту через Telegram initData.
+        const userId = tg?.initDataUnsafe?.user?.id;
+        if (!userId) {
+          balanceEl.textContent = 'У Telegram';
+          return;
+        }
+        response = await fetch(`${API}/cabinet-data?user_id=${encodeURIComponent(userId)}`, {
+          method: 'GET',
+          cache: 'no-store'
+        });
+      }
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Помилка балансу');
+      setBalance(data.bal);
     } catch (_) {
       balanceEl.textContent = 'Недоступно';
     }
   }
+
   function showResult(data) {
     const sideName = data.result === 'gold' ? 'ЗОЛОТО' : 'СРІБЛО';
     resultEl.className = 'result show ' + (data.won ? 'win' : 'loss');
     $('resultTitle').textContent = data.won ? 'ВИ ПЕРЕМОГЛИ' : 'ЦЬОГО РАЗУ НЕ ВДАЛОСЯ';
-    $('resultDetails').textContent = `Випало: ${sideName} · Ставка: ${data.stake} ₲ · ${data.won ? 'Виплата: ' + data.payout + ' ₲' : 'Втрачено: ' + data.stake + ' ₲'} · Баланс: ${money(data.balance)} ₲`;
+    $('resultDetails').textContent =
+      `Випало: ${sideName} · Ставка: ${data.stake} ₲ · ` +
+      `${data.won ? 'Виплата: ' + data.payout + ' ₲' : 'Втрачено: ' + data.stake + ' ₲'} · ` +
+      `Баланс: ${money(data.balance)} ₲`;
   }
+
   async function toss() {
-    if (window.__coinDiag) window.__coinDiag('НАТИСНУТО.\n' + telegramDiag());
     if (busy) return;
+
     const stake = Number(stakeEl.value);
     if (!Number.isInteger(stake) || stake < 1 || stake > 100) {
-      say('Вкажіть цілу ставку від 1 до 100 ₲.'); stakeEl.focus(); return;
+      say('Вкажіть цілу ставку від 1 до 100 ₲.');
+      stakeEl.focus();
+      return;
     }
-    if (!tg || !tg.initData || !tg.initDataUnsafe?.user?.id) {
-      say('Відкрийте Монетку через кнопку в Telegram-боті.'); return;
+
+    if (!coinToken && (!tg || !tg.initData || !tg.initDataUnsafe?.user?.id)) {
+      say('Відкрийте Монетку через кнопку в Telegram-боті.');
+      return;
     }
-    busy = true; flipBtn.disabled = true; flipBtn.textContent = 'МОНЕТКА У ПОВІТРІ…';
-    resultEl.className = 'result'; say('Підкидаємо монетку…');
-    stopSounds(); sound('spinSound', .8);
+
+    busy = true;
+    flipBtn.disabled = true;
+    flipBtn.textContent = 'МОНЕТКА У ПОВІТРІ…';
+    resultEl.className = 'result';
+    say('Підкидаємо монетку…');
+
+    clearFallTimers();
+    stopSounds();
+    sound('spinSound', .8);
+
     coin.classList.remove('spinning');
     coin.style.transform = 'rotateY(0deg)';
-    // Restart animation after resetting the previous transform.
     void coin.offsetWidth;
-    let animationStarted = false;
+
     try {
       const response = await fetch(`${API}/coin-flip`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({initData:tg.initData, request_id:requestId(), chosen_side:selectedSide, stake})
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          initData: tg?.initData || '',
+          token: coinToken,
+          request_id: requestId(),
+          chosen_side: selectedSide,
+          stake
+        })
       });
+
       const data = await response.json();
+
       if (!response.ok || !data.ok) {
+        clearFallTimers();
         stopSounds();
+
         if (data.error === 'insufficient_funds') say('Недостатньо dineros для цієї ставки.');
-        else if (data.error === 'unauthorized') say('Сесія Telegram застаріла. Закрийте й відкрийте Монетку знову.');
+        else if (data.error === 'unauthorized') say('Посилання Монетки недійсне. Натисніть /start у боті, щоб оновити кнопку.');
         else if (data.error === 'banned') say('Ваш акаунт не може грати в Монетку.');
         else say(data.error || 'Не вдалося виконати кидок. Спробуйте ще раз.');
+
         if (typeof data.balance === 'number') setBalance(data.balance);
         else await loadBalance();
         return;
       }
+
       const finalRotation = data.result === 'gold' ? 2520 : 2700;
       coin.style.setProperty('--end-rotation', finalRotation + 'deg');
       coin.classList.add('spinning');
-      animationStarted = true;
-      setTimeout(() => sound('fallSound', .65), 1550);
-      await new Promise(resolve => coin.addEventListener('animationend', resolve, {once:true}));
+
+      // Анімація: 2450 мс. Звук падіння: старт на 1550 мс,
+      // обрізання через 600 мс, щоб він завершився до приземлення.
+      fallTimer = setTimeout(() => {
+        sound('fallSound', .65);
+        fallStopTimer = setTimeout(() => {
+          const fall = $('fallSound');
+          try { fall.pause(); fall.currentTime = 0; } catch (_) {}
+          fallStopTimer = null;
+        }, 600);
+        fallTimer = null;
+      }, 1550);
+
+      await new Promise(resolve => {
+        coin.addEventListener('animationend', resolve, {once: true});
+      });
+
+      clearFallTimers();
       stopSounds();
       sound('landSound', .9);
       if (data.won) setTimeout(() => sound('winSound', .9), 180);
+
       coin.style.transform = 'rotateY(0deg)';
       coin.classList.toggle('show-silver', data.result === 'silver');
       setBalance(data.balance);
       showResult(data);
       $('stageCaption').textContent = data.result === 'gold' ? 'Випало золото' : 'Випало срібло';
       say(data.won ? 'Доля сьогодні на вашому боці.' : 'Спробуйте удачу наступного разу.');
+
     } catch (err) {
+      clearFallTimers();
       stopSounds();
-      say('Помилка з’єднання із сервером. Баланс не змінюйте вручну — перевірте його та спробуйте ще раз.');
+      say('Помилка з’єднання із сервером. Перевірте баланс перед повторною ставкою.');
       await loadBalance();
     } finally {
-      busy = false; flipBtn.disabled = false; flipBtn.textContent = 'ПІДКИНУТИ МОНЕТКУ';
+      busy = false;
+      flipBtn.disabled = false;
+      flipBtn.textContent = 'ПІДКИНУТИ МОНЕТКУ';
     }
   }
-  flipBtn.addEventListener('click', () => { if (window.__coinDiag) window.__coinDiag('ОБРОБНИК КНОПКИ ВИКЛИКАНО.'); toss(); });
+
+  flipBtn.addEventListener('click', toss);
+
   $('muteBtn').addEventListener('click', () => {
     muted = !muted;
     $('muteBtn').textContent = muted ? '♫ Звук: вимкнено' : '♫ Звук: увімкнено';
     try { localStorage.setItem('mg_coin_muted', muted ? '1' : '0'); } catch (_) {}
-    if (muted) stopSounds();
+    if (muted) {
+      clearFallTimers();
+      stopSounds();
+    }
   });
+
   $('muteBtn').textContent = muted ? '♫ Звук: вимкнено' : '♫ Звук: увімкнено';
   loadBalance();
 })();
 </script>
 </body>
 </html>
+'''
+
+path = Path("/mnt/data/coin.html")
+path.write_text(html, encoding="utf-8")
+print(f"Готово: {path.name}")
+print(f"Розмір файлу: {path.stat().st_size:,} байт")
