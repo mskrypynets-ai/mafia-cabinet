@@ -3258,14 +3258,14 @@ body::before, body::after {
             <div class="modal-title">Префікс для себе</div>
             <input class="field" type="text" id="p_text" placeholder="Текст префікса" maxlength="20">
             <input class="field" type="number" id="p_days" placeholder="Кількість днів" min="1" value="30">
-            <div class="dynamic-price" id="p_price">Ціна: 450 ₲</div>
+            <div class="dynamic-price" id="p_price">Ціна: 900 ₲</div>
             <div class="btn-row">
                 <button class="btn btn-cancel" onclick="closeModal()">Скасувати</button>
                 <button class="btn btn-confirm" onclick="confirmPrefix('buy_prefix_self')">Придбати</button>
             </div>
         `);
         document.getElementById('p_days').oninput = e => {
-            document.getElementById('p_price').textContent = 'Ціна: ' + (e.target.value * 15) + ' ₲';
+            document.getElementById('p_price').textContent = 'Ціна: ' + (e.target.value * 30) + ' ₲';
         };
     }
 
@@ -3276,14 +3276,14 @@ body::before, body::after {
             <input class="field" type="number" id="p_target" placeholder="ID друга">
             <input class="field" type="number" id="p_days" placeholder="Кількість днів" min="1" value="30">
             <input class="field" type="text" id="p_text" placeholder="Текст префікса" maxlength="20">
-            <div class="dynamic-price" id="p_price">Ціна: 600 ₲</div>
+            <div class="dynamic-price" id="p_price">Ціна: 1200 ₲</div>
             <div class="btn-row">
                 <button class="btn btn-cancel" onclick="closeModal()">Скасувати</button>
                 <button class="btn btn-confirm" onclick="confirmPrefix('buy_prefix_friend')">Подарувати</button>
             </div>
         `);
         document.getElementById('p_days').oninput = e => {
-            document.getElementById('p_price').textContent = 'Ціна: ' + (e.target.value * 20) + ' ₲';
+            document.getElementById('p_price').textContent = 'Ціна: ' + (e.target.value * 40) + ' ₲';
         };
     }
 
@@ -3291,7 +3291,7 @@ body::before, body::after {
         const days = parseInt(document.getElementById('p_days')?.value) || 0;
         const text = document.getElementById('p_text')?.value?.trim() || '';
         const target = document.getElementById('p_target')?.value || null;
-        const pricePerDay = action === 'buy_prefix_self' ? 15 : 20;
+        const pricePerDay = action === 'buy_prefix_self' ? 30 : 40;
         const total = days * pricePerDay;
         if (!text) return showToast('Введіть текст префікса');
         if (days < 1) return showToast('Мінімум 1 день');
@@ -3305,20 +3305,20 @@ body::before, body::after {
             <div class="modal-title">👑 Статус адміна</div>
             <div class="modal-text">Мінімальне замовлення — 3 дні</div>
             <input class="field" type="number" id="adm_days" placeholder="Кількість днів" min="3" value="3">
-            <div class="dynamic-price" id="adm_price">Ціна: 150 ₲</div>
+            <div class="dynamic-price" id="adm_price">Ціна: 210 ₲</div>
             <div class="btn-row">
                 <button class="btn btn-cancel" onclick="closeModal()">Скасувати</button>
                 <button class="btn btn-confirm" onclick="confirmAdmin()">Придбати</button>
             </div>
         `);
         document.getElementById('adm_days').oninput = e => {
-            document.getElementById('adm_price').textContent = 'Ціна: ' + (e.target.value * 50) + ' ₲';
+            document.getElementById('adm_price').textContent = 'Ціна: ' + (e.target.value * 70) + ' ₲';
         };
     }
 
     function confirmAdmin() {
         const days = parseInt(document.getElementById('adm_days').value) || 0;
-        const total = days * 50;
+        const total = days * 70;
         if (days < 3) return showToast('Мінімум 3 дні');
         if (userBalance < total) return showToast('Недостатньо дінеро на рахунку');
         finishAction({ action: 'buy_admin', days, price: total });
@@ -3371,9 +3371,9 @@ body::before, body::after {
     function openMuteCalculator() {
         openModal(`
             <div class="modal-title">Зняти мут</div>
-            <div class="modal-text">Базові 30 хв = 50 ₲<br>Кожна наступна хвилина +2 ₲</div>
+            <div class="modal-text">Базові 30 хв = 70 ₲<br>Кожна наступна хвилина +3 ₲</div>
             <input class="field" type="number" id="m_mins" placeholder="Хвилини" min="30" value="30">
-            <div class="dynamic-price" id="m_price">Ціна: 50 ₲</div>
+            <div class="dynamic-price" id="m_price">Ціна: 70 ₲</div>
             <div class="btn-row">
                 <button class="btn btn-cancel" onclick="closeModal()">Скасувати</button>
                 <button class="btn btn-confirm" onclick="confirmMuteRemoval()">Придбати</button>
@@ -3381,7 +3381,7 @@ body::before, body::after {
         `);
         document.getElementById('m_mins').oninput = e => {
             const mins = parseInt(e.target.value) || 0;
-            const price = mins <= 30 ? 50 : 50 + (mins - 30) * 2;
+            const price = mins <= 30 ? 70 : 70 + (mins - 30) * 3;
             document.getElementById('m_price').textContent = 'Ціна: ' + price + ' ₲';
         };
     }
@@ -3389,7 +3389,7 @@ body::before, body::after {
     function confirmMuteRemoval() {
         const mins = parseInt(document.getElementById('m_mins').value) || 0;
         if (mins < 30) return showToast('Мінімальний час — 30 хв');
-        const price = mins <= 30 ? 50 : 50 + (mins - 30) * 2;
+        const price = mins <= 30 ? 70 : 70 + (mins - 30) * 3;
         if (userBalance < price) return showToast('Недостатньо дінеро на рахунку');
         finishAction({ action: 'shop_buy', item: `Зняти мут (${mins} хв)`, price });
     }
@@ -3405,8 +3405,8 @@ body::before, body::after {
         {
             title: 'Префікси',
             items: [
-                { icon: 'tag', name: 'Змінити префікс гравцеві', price: 20 },
-                { icon: 'badge', name: 'Змінити префікс Адміну', price: 40 },
+                { icon: 'tag', name: 'Змінити префікс гравцеві', price: 30 },
+                { icon: 'badge', name: 'Змінити префікс Адміну', price: 60 },
                 { icon: 'demon', name: 'Образливий преф (на добу)', price: 400 },
                 { icon: 'basket', name: 'Зняти образливий преф', price: 550 },
             ]
@@ -3414,28 +3414,28 @@ body::before, body::after {
         {
             title: 'Покарання та захист',
             items: [
-                { icon: 'mute', name: 'Мут учаснику (30 хв)', price: 60 },
-                { icon: 'timed_mute', name: 'Мут учаснику (60 хв)', price: 100 },
-                { icon: 'shield', name: 'Захист від таргета', price: 50 },
-                { icon: 'demon', name: 'Логіка відсутня', price: 100 },
-                { icon: 'masks', name: 'Мут адміністратору (30 хв)', price: 200 },
+                { icon: 'mute', name: 'Мут учаснику (30 хв)', price: 80 },
+                { icon: 'timed_mute', name: 'Мут учаснику (60 хв)', price: 140 },
+                { icon: 'shield', name: 'Захист від таргета', price: 100 },
+                { icon: 'demon', name: 'Логіка відсутня', price: 150 },
+                { icon: 'masks', name: 'Мут адміністратору (30 хв)', price: 300 },
             ]
         },
         {
             title: 'Адмін-дії',
             items: [
                 { icon: 'lock', name: 'Зняти мут (від 30 хв)', price: null, special: 'mute' },
-                { icon: 'warning', name: 'Зняти варн', price: 150 },
-                { icon: 'key', name: 'Зняти бан', price: 300 },
-                { icon: 'shield', name: 'Бан (на 12 годин)', price: 300 },
+                { icon: 'warning', name: 'Зняти варн', price: 200 },
+                { icon: 'key', name: 'Зняти бан', price: 400 },
+                { icon: 'shield', name: 'Бан (на 12 годин)', price: 400 },
                 { icon: 'badge', name: 'Бан адміну (12 годин)', price: 1000 },
             ]
         },
         {
             title: 'Інше',
             items: [
-                { icon: 'tag', name: 'Фільтр', price: 50 },
-                { icon: 'masks', name: 'Проведення супергри', price: 70 },
+                { icon: 'tag', name: 'Фільтр', price: 70 },
+                { icon: 'masks', name: 'Проведення супергри', price: 100 },
             ]
         }
     ];
